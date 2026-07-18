@@ -1,0 +1,74 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Business {
+  id                        String         @id // Google Place ID
+  name                      String
+  primaryType               String?
+  types                     String         // JSON array as string
+  formattedAddress          String?
+  latitude                  Float
+  longitude                 Float
+  rating                    Float?
+  userRatingCount           Int?
+  websiteUri                String?
+  websiteStatus             String         // "no_website", "social_media_only", "has_website", "unchecked"
+  nationalPhoneNumber       String?
+  internationalPhoneNumber  String?
+  googleMapsUri             String?
+  businessStatus            String?
+  isOpen                    Boolean?
+  createdAt                 DateTime       @default(now())
+  updatedAt                 DateTime       @updatedAt
+  lastSeenAt                DateTime       @default(now())
+  callingStatus             String         @default("Henüz aranmadı") // CRM call status
+  notes                     BusinessNote[]
+  searchSessionId           String?
+  searchSession             SearchSession? @relation(fields: [searchSessionId], references: [id], onDelete: SetNull)
+  demoWebsiteUrl            String?        // URL of Vercel deployed website
+  email                     String?        // Found email address
+}
+
+model SearchSession {
+  id                  String     @id @default(uuid())
+  createdAt           DateTime   @default(now())
+  latitude            Float
+  longitude           Float
+  radius              Float
+  categories          String     // JSON array as string
+  totalFound          Int
+  noWebsiteCount      Int
+  requestCount        Int
+  status              String     // "SUCCESS", "FAILED"
+  errorMessage        String?
+  businesses          Business[]
+}
+
+model BusinessNote {
+  id          String   @id @default(uuid())
+  businessId  String
+  content     String
+  createdAt   DateTime @default(now())
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+model AppSettings {
+  id                     String  @id @default("global")
+  dailyMaxSearches       Int     @default(100)
+  maxCategoriesPerSearch Int     @default(10)
+  maxBusinessesPerSearch Int     @default(100)
+  isDemoMode             Boolean @default(false)
+  geminiApiKey           String?
+  vercelToken            String?
+}
+
+model ExcludedBrand {
+  id   String @id @default(uuid())
+  name String @unique
+}
