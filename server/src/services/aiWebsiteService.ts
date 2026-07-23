@@ -41,19 +41,23 @@ Design Requirements:
     1. Eğer fotoğrafta belirgin bir şekilde yakın çekim insan yüzleri, personel veya müşteri kalabalıkları var ise, o fotoğrafı web sitesinde KULLANMAYIN (yani "./photo-N.jpg" dosya yolunu src olarak atamayın).
     2. Eğer fotoğrafta mekanın içi, dışı, ürünleri (örn: yemek tabağı, kahve fincanı, dükkan tezgahı, araçlar vb.) veya genel konsepti insansız (veya arka planda belirsiz insanlar olacak şekilde) görünüyorsa, o görseli "./photo-1.jpg", "./photo-2.jpg" gibi dosya isimleriyle (birinci fotoğraf için "./photo-1.jpg", ikincisi için "./photo-2.jpg" vb.) sitedeki ilgili yerlere (Hero, Hizmet Kartları, Hakkımızda vb.) yerleştirin.
   - Eğer gönderilen fotoğrafların tamamında insan var ise veya hiç fotoğraf gönderilmemişse, aşağıdaki konseptlerden işletmeye uygun olanı için gerçekçi, yüksek kaliteli Unsplash fotoğraf linklerini kullanın (URL'yi birebir yazın, hayali link uydurmayın):
+    * Erkek Kuaförü / Berber / Barber Shop (KRİTİK: KESİNLİKLE kadın saç modeli, oje, makyaj kullanmayın!):
+      - Banner: https://images.unsplash.com/photo-1503951914875-452162b0f3f1?q=80&w=1200&auto=format&fit=crop
+      - Hizmetler (Saç Kesimi, Sakal Bakımı, Yıkama & Bakım): https://images.unsplash.com/photo-1621605815971-fbc98d665033?q=80&w=600&auto=format&fit=crop, https://images.unsplash.com/photo-1593702295094-aec22dfad693?q=80&w=600&auto=format&fit=crop, https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=600&auto=format&fit=crop
+      - Hakkımızda: https://images.unsplash.com/photo-1585747860715-2ba37e788b70?q=80&w=800&auto=format&fit=crop
+    * Bayan Kuaförü / Güzellik Salonu / Spa / Manikür (KRİTİK: Erkek berberi için bunu KULLANMAYIN!):
+      - Banner: https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=1200&auto=format&fit=crop
+      - Hizmetler: https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=600&auto=format&fit=crop, https://images.unsplash.com/photo-1604654894610-df63bc536371?q=80&w=600&auto=format&fit=crop, https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?q=80&w=600&auto=format&fit=crop
+      - Hakkımızda: https://images.unsplash.com/photo-1527891751199-7225231a68dd?q=80&w=800&auto=format&fit=crop
     * Kahveci / Cafe / Fırın: 
       - Banner: https://images.unsplash.com/photo-1507133750040-4a8f57021571?q=80&w=1200&auto=format&fit=crop
       - Hizmetler: https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=600&auto=format&fit=crop, https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=600&auto=format&fit=crop, https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=600&auto=format&fit=crop
       - Hakkımızda: https://images.unsplash.com/photo-1442512595331-e89e73853f31?q=80&w=800&auto=format&fit=crop
-    * Güzellik Salonu / Kuaför / Spa:
-      - Banner: https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=1200&auto=format&fit=crop
-      - Hizmetler: https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=600&auto=format&fit=crop, https://images.unsplash.com/photo-1604654894610-df63bc536371?q=80&w=600&auto=format&fit=crop, https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?q=80&w=600&auto=format&fit=crop
-      - Hakkımızda: https://images.unsplash.com/photo-1527891751199-7225231a68dd?q=80&w=800&auto=format&fit=crop
-    * Restoran / Yemek:
+    * Restoran / Yemek / Kebap / Fast Food:
       - Banner: https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1200&auto=format&fit=crop
       - Hizmetler: https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=600&auto=format&fit=crop, https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=600&auto=format&fit=crop, https://images.unsplash.com/photo-1551024601-bec78aea704b?q=80&w=600&auto=format&fit=crop
       - Hakkımızda: https://images.unsplash.com/photo-1556910103-1c02745aae4d?q=80&w=800&auto=format&fit=crop
-    * Oto Servis / Yıkama:
+    * Oto Servis / Yıkama / Aksesuar:
       - Banner: https://images.unsplash.com/photo-1486006920555-c77dce18193b?q=80&w=1200&auto=format&fit=crop
       - Hizmetler: https://images.unsplash.com/photo-1486006920555-c77dce18193b?q=80&w=600&auto=format&fit=crop, https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?q=80&w=600&auto=format&fit=crop, https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?q=80&w=600&auto=format&fit=crop
       - Hakkımızda: https://images.unsplash.com/photo-1517524206127-48bbd363f3d7?q=80&w=800&auto=format&fit=crop
@@ -62,6 +66,13 @@ Design Requirements:
       - Hizmetler: https://images.unsplash.com/photo-1472851294608-062f824d29cc?q=80&w=600&auto=format&fit=crop, https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?q=80&w=600&auto=format&fit=crop, https://images.unsplash.com/photo-1534452203293-494d7ddbf7e0?q=80&w=600&auto=format&fit=crop
       - Hakkımızda: https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=800&auto=format&fit=crop
   - Görsellerin tümüne Tailwind'in "object-cover" sınıfını verin, hafif zoom/hover animasyonları ("hover:scale-105 transition-transform duration-300") ve yuvarlatılmış köşeler kullanarak sitenin canlı, premium ve son derece profesyonel hissettirmesini sağlayın.
+- **Tasarım Şıklığı & Premium Görünüm Kuralları (KRİTİK - SADE YAPMAYIN):**
+  * Sitede düz gri arka planlar ve basit beyaz kutulardan oluşan ucuz/sade tasarımlar kesinlikle YAPMAYIN.
+  * Arka planlarda düz renkler yerine şık CSS degrade (gradient) geçişleri (örneğin dark temalarda: to-slate-900 via-zinc-950 from-neutral-950), ince modern desenler veya dairesel parlamalar (radial blur glow) tercih edin.
+  * Kartları tasarlarken "Glassmorphism" (cam efekti) uygulayın: 'backdrop-blur-md bg-white/5 border border-white/10 hover:border-white/20 transition-all duration-300 shadow-2xl' ve hover edildiğinde kenarlarında hafif bir parlama (glow) veya shadow efekti olmasını sağlayın.
+  * Butonları 'bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-bold tracking-wide transition-all shadow-[0_0_15px_rgba(245,158,11,0.2)] hover:shadow-[0_0_25px_rgba(245,158,11,0.4)] px-6 py-3 rounded-xl' gibi son derece parlayan ve dinamik sınıflarla süsleyin.
+  * Metin başlıklarını çok daha estetik yapmak için degrade geçişli yazılar ('bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent') tercih edin.
+  * Hizmet kartlarının üstündeki resimleri hover edildiğinde büyüyecek şekilde ('overflow-hidden' bir kapsayıcı içinde 'hover:scale-105 transition-transform duration-500') kurgulayın.
 - **Arama Motoru Optimizasyonu (SEO) & Google Dostu Yapı (KRİTİK):**
   - Sitede Google arama motorunun sevdiği ve üst sıralara çıkaran anahtar kelime zenginliğine dikkat edin.
   - Sektör ve konuma göre (örneğin işletmenin adresindeki il/ilçe bilgisinden yola çıkarak, örn: "Ankara'nın En İyi Cafe ve Filtre Kahvecisi", "Kadıköy'de Profesyonel Saç Tasarım ve Güzellik Salonu") başlıklar (h1, h2) ve metinler oluşturun.
