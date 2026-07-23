@@ -11,6 +11,61 @@ interface WebGenerationParams {
   downloadedPhotos: { filename: string; base64: string; mimeType: string }[];
 }
 
+const FALLBACK_IMAGES: Record<string, string[]> = {
+  barber: [
+    'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?q=80&w=1200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1621605815971-fbc98d665033?q=80&w=600&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1593702295094-aec22dfad693?q=80&w=600&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1605497746444-ac9dbd39f477?q=80&w=600&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?q=80&w=800&auto=format&fit=crop'
+  ],
+  beauty: [
+    'https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=1200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=600&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1604654894610-df63bc536371?q=80&w=600&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?q=80&w=600&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1527891751199-7225231a68dd?q=80&w=800&auto=format&fit=crop'
+  ],
+  cafe: [
+    'https://images.unsplash.com/photo-1507133750040-4a8f57021571?q=80&w=1200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=600&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=600&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=600&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1442512595331-e89e73853f31?q=80&w=800&auto=format&fit=crop'
+  ],
+  restaurant: [
+    'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=600&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=600&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1551024601-bec78aea704b?q=80&w=600&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1556910103-1c02745aae4d?q=80&w=800&auto=format&fit=crop'
+  ],
+  auto: [
+    'https://images.unsplash.com/photo-1486006920555-c77dce18193b?q=80&w=1200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1486006920555-c77dce18193b?q=80&w=600&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?q=80&w=600&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?q=80&w=600&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1517524206127-48bbd363f3d7?q=80&w=800&auto=format&fit=crop'
+  ],
+  general: [
+    'https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=1200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1472851294608-062f824d29cc?q=80&w=600&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?q=80&w=600&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1534452203293-494d7ddbf7e0?q=80&w=600&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=800&auto=format&fit=crop'
+  ]
+};
+
+const getCategoryKey = (category: string): string => {
+  const cat = category.toLowerCase();
+  if (cat.includes('berber') || cat.includes('barber') || cat.includes('erkek kuaf')) return 'barber';
+  if (cat.includes('güzellik') || cat.includes('kuaför') || cat.includes('salon') || cat.includes('spa') || cat.includes('bayan')) return 'beauty';
+  if (cat.includes('cafe') || cat.includes('kahve') || cat.includes('fırın') || cat.includes('pastane')) return 'cafe';
+  if (cat.includes('restoran') || cat.includes('yemek') || cat.includes('kebap') || cat.includes('lokanta') || cat.includes('döner')) return 'restaurant';
+  if (cat.includes('oto') || cat.includes('yıkama') || cat.includes('servis') || cat.includes('tamir') || cat.includes('araba')) return 'auto';
+  return 'general';
+};
+
 export class AIWebsiteService {
   /**
    * Generates a single-page modern landing page HTML string using Gemini API (2.5-flash)
@@ -211,6 +266,21 @@ Design Requirements:
       htmlContent = htmlContent.substring(0, htmlContent.length - 3);
     }
     htmlContent = htmlContent.trim();
+
+    // Server-side rewrite of non-existent photo references to beautiful Unsplash fallbacks
+    const categoryKey = getCategoryKey(params.category);
+    const fallbacks = FALLBACK_IMAGES[categoryKey] || FALLBACK_IMAGES.general;
+    const downloadedCount = params.downloadedPhotos ? params.downloadedPhotos.length : 0;
+
+    htmlContent = htmlContent.replace(/(["'])\.?\/photo-(\d+)\.jpg(["'])/g, (match, p1, p2, p3) => {
+      const photoIndex = parseInt(p2, 10); // 1-indexed
+      if (photoIndex > downloadedCount) {
+        // Fall back to matching category image index (wrap around fallback list if necessary)
+        const fallbackUrl = fallbacks[(photoIndex - 1) % fallbacks.length];
+        return `${p1}${fallbackUrl}${p3}`;
+      }
+      return match;
+    });
 
     return htmlContent;
   }
