@@ -214,61 +214,70 @@ Design Requirements:
       });
     }
 
+    const apiKeys = params.geminiApiKey.split(/[\n,]+/).map((s) => s.trim()).filter(Boolean);
+    if (apiKeys.length === 0) {
+      throw new Error('Geçerli bir Gemini API Key bulunamadı.');
+    }
+
     const models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite'];
     let lastError: any = null;
     let htmlContent = '';
     let isRateLimited = false;
 
-    for (const model of models) {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${params.geminiApiKey}`;
-      
-      // Try up to 3 times for each model (in case of temporary 503/429)
-      for (let attempt = 1; attempt <= 3; attempt++) {
-        try {
-          const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              contents: [
-                {
-                  parts: parts,
-                },
-              ],
-            }),
-          });
+    for (const key of apiKeys) {
+      for (const model of models) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+        
+        // Try up to 2 times for each model/key combination
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          try {
+            const response = await fetch(url, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                contents: [
+                  {
+                    parts: parts,
+                  },
+                ],
+              }),
+            });
 
-          if (response.status === 429 || response.status === 503) {
-            isRateLimited = true;
-            // Wait with backoff before retry (2s, 4s, 6s)
-            await new Promise((resolve) => setTimeout(resolve, 2000 * attempt));
-            continue;
-          }
+            if (response.status === 429 || response.status === 503) {
+              isRateLimited = true;
+              // If rate limited and we have more keys, try next key immediately
+              if (apiKeys.length > 1) {
+                break;
+              }
+              await new Promise((resolve) => setTimeout(resolve, 2000 * attempt));
+              continue;
+            }
 
-          if (!response.ok) {
-            const errText = await response.text();
-            throw new Error(`Gemini API Hatası (${model}): ${response.status} - ${errText}`);
-          }
+            if (!response.ok) {
+              const errText = await response.text();
+              throw new Error(`Gemini API Hatası (${model}): ${response.status} - ${errText}`);
+            }
 
-          const resData: any = await response.json();
-          htmlContent = resData.candidates?.[0]?.content?.parts?.[0]?.text || '';
-          if (htmlContent) {
-            break; // Success!
+            const resData: any = await response.json();
+            htmlContent = resData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            if (htmlContent) {
+              break; // Success!
+            }
+          } catch (err: any) {
+            lastError = err;
+            await new Promise((resolve) => setTimeout(resolve, 1000));
           }
-        } catch (err: any) {
-          lastError = err;
-          await new Promise((resolve) => setTimeout(resolve, 1500));
         }
+        if (htmlContent) break; // Success!
       }
-      if (htmlContent) {
-        break; // Success!
-      }
+      if (htmlContent) break; // Success!
     }
 
     if (!htmlContent) {
       if (isRateLimited) {
-        throw new Error('Gemini API İstek Kotası Doldu: Google\'ın ücretsiz Gemini API anahtarının dakikalık/günlük limitine ulaşıldı. Lütfen 1-2 dakika bekleyip tekrar deneyin veya Ayarlar sayfasından yeni bir API Key ekleyin.');
+        throw new Error('Gemini API İstek Kotası Doldu: Tüm API anahtarlarının dakikalık limitine ulaşıldı. Lütfen 1-2 dakika bekleyip tekrar deneyin veya Ayarlar sayfasından yeni bir API Key ekleyin.');
       }
       throw lastError || new Error('Gemini API sitesi üretemedi.');
     }

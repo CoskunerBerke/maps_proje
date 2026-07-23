@@ -260,15 +260,15 @@ export default function Settings({ showToast }: SettingsProps) {
                 </div>
 
                 <div className="space-y-1.5 pt-2 border-t border-slate-850">
-                  <label className="font-semibold text-slate-300">Gemini API Key</label>
-                  <input
-                    type="password"
-                    placeholder="AI Web sitesi üretimi için Gemini API Key girin..."
+                  <label className="font-semibold text-slate-300">Gemini API Key (Çoklu Key Destekli)</label>
+                  <textarea
+                    rows={2}
+                    placeholder="AI Web sitesi üretimi için Gemini API Key girin... (Birden fazla eklemek için aralarına virgül veya yeni satır koyun)"
                     value={settings.geminiApiKey || ''}
                     onChange={(e) => setSettings({ ...settings, geminiApiKey: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-850 focus:border-cyan-500 rounded-lg p-2 text-white outline-none"
+                    className="w-full bg-slate-950 border border-slate-850 focus:border-cyan-500 rounded-lg p-2 text-white outline-none font-mono text-xs resize-none"
                   />
-                  <span className="text-[10px] text-slate-500">Google AI Studio'dan alacağınız API anahtarı</span>
+                  <span className="text-[10px] text-cyan-400 block font-medium">💡 İpucu: Birden fazla API Key eklerseniz (virgülle ayırarak), biri kotaya takıldığında sistem anında diğerine geçer!</span>
                 </div>
 
                 <div className="space-y-1.5">
