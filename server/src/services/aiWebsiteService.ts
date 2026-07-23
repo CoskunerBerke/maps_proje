@@ -214,7 +214,7 @@ Design Requirements:
       });
     }
 
-    const models = ['gemini-2.5-flash', 'gemini-2.0-flash'];
+    const models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite'];
     let lastError: any = null;
     let htmlContent = '';
     let isRateLimited = false;
@@ -268,7 +268,7 @@ Design Requirements:
 
     if (!htmlContent) {
       if (isRateLimited) {
-        throw new Error('Gemini API Kota Sınırı: Google dakikalık istek limitine ulaşıldı. Lütfen 10-15 saniye bekleyip tekrar deneyin.');
+        throw new Error('Gemini API İstek Kotası Doldu: Google\'ın ücretsiz Gemini API anahtarının dakikalık/günlük limitine ulaşıldı. Lütfen 1-2 dakika bekleyip tekrar deneyin veya Ayarlar sayfasından yeni bir API Key ekleyin.');
       }
       throw lastError || new Error('Gemini API sitesi üretemedi.');
     }
