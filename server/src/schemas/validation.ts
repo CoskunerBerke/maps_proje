@@ -16,6 +16,9 @@ export const BusinessUpdateSchema = z.object({
   callingStatus: z.enum([
     'Henüz aranmadı',
     'Arandı, ulaşılmadı',
+    'Mesaj atıldı',
+    'Mesaja geri dönüş sağlandı',
+    'Mesaja geri dönüş sağlandı, müşteri olmak istiyor',
     'İlgileniyor',
     'Teklif istiyor',
     'Daha sonra ara',

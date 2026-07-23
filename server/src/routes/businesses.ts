@@ -61,7 +61,7 @@ router.get('/', async (req: Request, res: Response) => {
           where.callingStatus = { not: 'Henüz aranmadı' };
           break;
         case 'olumlu':
-          where.callingStatus = { in: ['Müşteriye dönüştü', 'İlgileniyor', 'Teklif istiyor'] };
+          where.callingStatus = { in: ['Müşteriye dönüştü', 'İlgileniyor', 'Teklif istiyor', 'Mesaja geri dönüş sağlandı', 'Mesaja geri dönüş sağlandı, müşteri olmak istiyor'] };
           break;
         case 'olumsuz':
           where.callingStatus = { in: ['Web sitesi istemiyor', 'Yanlış telefon'] };

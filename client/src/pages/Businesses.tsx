@@ -55,6 +55,9 @@ const getDomainSuggestion = (name: string) => {
 const CRM_STATUSES = [
   'Henüz aranmadı',
   'Arandı, ulaşılmadı',
+  'Mesaj atıldı',
+  'Mesaja geri dönüş sağlandı',
+  'Mesaja geri dönüş sağlandı, müşteri olmak istiyor',
   'İlgileniyor',
   'Teklif istiyor',
   'Daha sonra ara',
