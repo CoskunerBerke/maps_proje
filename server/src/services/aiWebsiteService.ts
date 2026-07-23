@@ -255,6 +255,13 @@ Design Requirements:
               continue;
             }
 
+            if (response.status === 400 || response.status === 401) {
+              // Invalid API key, try next key in pool if available
+              if (apiKeys.length > 1) {
+                break;
+              }
+            }
+
             if (!response.ok) {
               const errText = await response.text();
               throw new Error(`Gemini API Hatası (${model}): ${response.status} - ${errText}`);
