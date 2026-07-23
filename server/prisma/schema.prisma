@@ -33,6 +33,7 @@ model Business {
   searchSession             SearchSession? @relation(fields: [searchSessionId], references: [id], onDelete: SetNull)
   demoWebsiteUrl            String?        // URL of Vercel deployed website
   email                     String?        // Found email address
+  photos                    String?        // JSON stringified array of Google Maps photos
 }
 
 model SearchSession {

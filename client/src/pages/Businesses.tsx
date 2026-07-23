@@ -3,7 +3,7 @@ import { translateCategory } from './Dashboard';
 import { 
   FileSpreadsheet, FileText, Phone, Star, MessageCircle, 
   ExternalLink, Eye, PhoneCall, Trash2, Edit3, Search, Filter, 
-  ArrowUpDown, X, Check, Loader2, Globe 
+  ArrowUpDown, X, Check, Loader2, Globe, Mail, Copy 
 } from 'lucide-react';
 
 interface Business {
@@ -766,6 +766,105 @@ export default function Businesses({ showToast, userLocation }: BusinessesProps)
                     <p className="text-slate-455 font-semibold text-slate-500">Henüz Üretilmedi</p>
                   )}
                 </div>
+
+                {selectedBusiness.demoWebsiteUrl && (
+                  <div className="sm:col-span-2 bg-slate-950/60 p-4 rounded-xl border border-cyan-900/20 space-y-3 mt-2">
+                    <div className="flex items-center gap-2 text-cyan-400">
+                      <MessageCircle size={16} />
+                      <span className="font-bold text-sm">Müşteriye Teklif Gönder (Satış Otomasyonu)</span>
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      Aşağıdaki hazır teklif şablonlarını kullanarak işletmeyle doğrudan iletişime geçebilirsiniz. Canlı demo linki şablonlara eklenmiştir.
+                    </p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                      {/* E-posta Teklifi */}
+                      <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-850 space-y-2 flex flex-col justify-between">
+                        <div>
+                          <span className="font-bold text-slate-300 text-xs flex items-center gap-1.5">
+                            <Mail size={12} className="text-cyan-500" />
+                            E-posta Şablonu
+                          </span>
+                          {selectedBusiness.email ? (
+                            <p className="text-[11px] text-slate-400 mt-1 truncate">Alıcı: {selectedBusiness.email}</p>
+                          ) : (
+                            <p className="text-[11px] text-amber-500 mt-1">E-posta adresi bulunamadı</p>
+                          )}
+                        </div>
+                        
+                        <div className="flex gap-2 pt-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const subject = encodeURIComponent(`${selectedBusiness.name} İçin Özel Web Tasarım Teklifi`);
+                              const body = encodeURIComponent(`Merhaba Yetkili,\n\nGoogle Haritalar üzerindeki bilgilerinizi inceledik ve işletmeniz için modern, hızlı ve mobil uyumlu bir web sitesi tasarladık. Web sitenizin canlı demosuna aşağıdaki bağlantıdan ulaşabilirsiniz:\n\nDemoyu Görün: ${selectedBusiness.demoWebsiteUrl}\n\nEğer bu tasarımı beğendiyseniz, kendi alan adınızla (örn: www.isletmeniz.com) hemen yayına alabiliriz.\n\nDetaylar için bu e-postaya yanıt verebilir veya ${selectedBusiness.nationalPhoneNumber || 'telefon numaramız'} üzerinden bizimle iletişime geçebilirsiniz.\n\nSaygılarımızla,`);
+                              window.open(`mailto:${selectedBusiness.email || ''}?subject=${subject}&body=${body}`);
+                            }}
+                            className="flex-1 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold rounded text-[11px] flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                          >
+                            <Mail size={10} />
+                            <span>E-posta Gönder</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const text = `Konu: ${selectedBusiness.name} İçin Özel Web Tasarım Teklifi\n\nMerhaba Yetkili,\n\nGoogle Haritalar üzerindeki bilgilerinizi inceledik ve işletmeniz için modern, hızlı ve mobil uyumlu bir web sitesi tasarladık. Web sitenizin canlı demosuna aşağıdaki bağlantıdan ulaşabilirsiniz:\n\nDemoyu Görün: ${selectedBusiness.demoWebsiteUrl}\n\nEğer bu tasarımı beğendiyseniz, kendi alan adınızla hemen yayına alabiliriz.\n\nİyi çalışmalar.`;
+                              navigator.clipboard.writeText(text);
+                              showToast("E-posta taslağı kopyalandı!", "success");
+                            }}
+                            className="p-1.5 bg-slate-800 hover:bg-slate-750 text-slate-300 rounded transition-colors cursor-pointer"
+                            title="Taslağı Kopyala"
+                          >
+                            <Copy size={12} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* WhatsApp / SMS Teklifi */}
+                      <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-850 space-y-2 flex flex-col justify-between">
+                        <div>
+                          <span className="font-bold text-slate-300 text-xs flex items-center gap-1.5">
+                            <MessageCircle size={12} className="text-green-500" />
+                            WhatsApp Mesajı
+                          </span>
+                          {selectedBusiness.nationalPhoneNumber || selectedBusiness.internationalPhoneNumber ? (
+                            <p className="text-[11px] text-slate-400 mt-1 truncate">Alıcı: {selectedBusiness.nationalPhoneNumber || selectedBusiness.internationalPhoneNumber}</p>
+                          ) : (
+                            <p className="text-[11px] text-amber-500 mt-1">Telefon numarası bulunamadı</p>
+                          )}
+                        </div>
+
+                        <div className="flex gap-2 pt-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const phone = (selectedBusiness.internationalPhoneNumber || selectedBusiness.nationalPhoneNumber || '').replace(/[^0-9]/g, '');
+                              const text = encodeURIComponent(`Merhaba,\n\nGoogle Haritalar üzerindeki bilgilerinizi inceledik ve işletmeniz için özel bir web sitesi tasarladık. Web sitenizin canlı demosuna aşağıdaki bağlantıdan ulaşabilirsiniz:\n\n${selectedBusiness.demoWebsiteUrl}\n\nEğer bu tasarımı beğendiyseniz, kendi alan adınızla hemen yayına alabiliriz. İlgilenirseniz buradan yazabilirsiniz.\n\nİyi çalışmalar!`);
+                              window.open(`https://wa.me/${phone}?text=${text}`, '_blank');
+                            }}
+                            disabled={!(selectedBusiness.nationalPhoneNumber || selectedBusiness.internationalPhoneNumber)}
+                            className="flex-1 py-1.5 bg-green-600 hover:bg-green-500 disabled:bg-slate-800 disabled:text-slate-600 text-white font-bold rounded text-[11px] flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                          >
+                            <MessageCircle size={10} />
+                            <span>WhatsApp Mesajı</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const text = `Merhaba,\n\nGoogle Haritalar üzerindeki bilgilerinizi inceledik ve işletmeniz için özel bir web sitesi tasarladık. Web sitenizin canlı demosuna aşağıdaki bağlantıdan ulaşabilirsiniz:\n\n${selectedBusiness.demoWebsiteUrl}\n\nEğer bu tasarımı beğendiyseniz, kendi alan adınızla hemen yayına alabiliriz. İlgilenirseniz buradan yazabilirsiniz.\n\nİyi çalışmalar!`;
+                              navigator.clipboard.writeText(text);
+                              showToast("WhatsApp taslağı kopyalandı!", "success");
+                            }}
+                            className="p-1.5 bg-slate-800 hover:bg-slate-750 text-slate-300 rounded transition-colors cursor-pointer"
+                            title="Taslağı Kopyala"
+                          >
+                            <Copy size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Notes History */}

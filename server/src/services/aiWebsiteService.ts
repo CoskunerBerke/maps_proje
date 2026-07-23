@@ -8,6 +8,7 @@ interface WebGenerationParams {
   geminiApiKey: string;
   vercelToken: string;
   googleMapsUri: string | null;
+  downloadedPhotos: { filename: string; base64: string; mimeType: string }[];
 }
 
 export class AIWebsiteService {
@@ -35,11 +36,32 @@ Design Requirements:
 - Add a beautiful dark/light modern premium color scheme matching the industry (e.g., warm golden/slate tones for cafes, luxury rose/gold for beauty salons, clean corporate blue/gray for retail).
 - **Görseller ve Fotoğraflar (KRİTİK):**
   - Kesinlikle boş gri kutular veya yer tutucu (placeholder) çizimler kullanmayın.
-  - Sitede bol miktarda yüksek kaliteli ve gerçekçi fotoğraflar kullanın. Bunun için **Unsplash** üzerindeki gerçek fotoğraf linklerini ("https://images.unsplash.com/" ile başlayan, örn: yemek, salon, iç mekan vb. temsil eden gerçek görsel adresleri) tercih edin.
-  - **Hero Bölümü:** İşletmenin türüne uygun (örneğin restoran için lezzetli bir yemek tabağı, kuaför için modern bir salon, oto servis için parlayan bir araç) geniş bir arka plan veya yan görsel barındırmalıdır.
-  - **Hizmetler / Ürünler Kartları:** Her kartın üst kısmında o hizmeti simgeleyen (örneğin saç kesim kartında saç kesen kuaför görseli, kahve kartında sıcak latte) kaliteli bir görsel olmalıdır.
-  - **Hakkımızda Bölümü:** Güven veren bir ekip, işletme dış cephesi veya üretim anını gösteren bir görsel ile yan yana yer almalıdır.
-  - Görsellerin tümüne Tailwind'in "object-cover" sınıfını verin, hafif zoom/hover animasyonları ("hover:scale-105 transition-transform duration-300") ve yuvarlatılmış köşeler kullanarak sitenin canlı, premium ve interaktif hissettirmesini sağlayın.
+  - Size bu işletmeye ait Google Haritalar'dan çekilen ${params.downloadedPhotos.length} adet fotoğraf gönderilmiştir. 
+  - Lütfen bu fotoğrafları multimodal olarak tek tek analiz edin:
+    1. Eğer fotoğrafta belirgin bir şekilde yakın çekim insan yüzleri, personel veya müşteri kalabalıkları var ise, o fotoğrafı web sitesinde KULLANMAYIN (yani "./photo-N.jpg" dosya yolunu src olarak atamayın).
+    2. Eğer fotoğrafta mekanın içi, dışı, ürünleri (örn: yemek tabağı, kahve fincanı, dükkan tezgahı, araçlar vb.) veya genel konsepti insansız (veya arka planda belirsiz insanlar olacak şekilde) görünüyorsa, o görseli "./photo-1.jpg", "./photo-2.jpg" gibi dosya isimleriyle (birinci fotoğraf için "./photo-1.jpg", ikincisi için "./photo-2.jpg" vb.) sitedeki ilgili yerlere (Hero, Hizmet Kartları, Hakkımızda vb.) yerleştirin.
+  - Eğer gönderilen fotoğrafların tamamında insan var ise veya hiç fotoğraf gönderilmemişse, aşağıdaki konseptlerden işletmeye uygun olanı için gerçekçi, yüksek kaliteli Unsplash fotoğraf linklerini kullanın (URL'yi birebir yazın, hayali link uydurmayın):
+    * Kahveci / Cafe / Fırın: 
+      - Banner: https://images.unsplash.com/photo-1507133750040-4a8f57021571?q=80&w=1200&auto=format&fit=crop
+      - Hizmetler: https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=600&auto=format&fit=crop, https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=600&auto=format&fit=crop, https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=600&auto=format&fit=crop
+      - Hakkımızda: https://images.unsplash.com/photo-1442512595331-e89e73853f31?q=80&w=800&auto=format&fit=crop
+    * Güzellik Salonu / Kuaför / Spa:
+      - Banner: https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=1200&auto=format&fit=crop
+      - Hizmetler: https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=600&auto=format&fit=crop, https://images.unsplash.com/photo-1604654894610-df63bc536371?q=80&w=600&auto=format&fit=crop, https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?q=80&w=600&auto=format&fit=crop
+      - Hakkımızda: https://images.unsplash.com/photo-1527891751199-7225231a68dd?q=80&w=800&auto=format&fit=crop
+    * Restoran / Yemek:
+      - Banner: https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1200&auto=format&fit=crop
+      - Hizmetler: https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=600&auto=format&fit=crop, https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=600&auto=format&fit=crop, https://images.unsplash.com/photo-1551024601-bec78aea704b?q=80&w=600&auto=format&fit=crop
+      - Hakkımızda: https://images.unsplash.com/photo-1556910103-1c02745aae4d?q=80&w=800&auto=format&fit=crop
+    * Oto Servis / Yıkama:
+      - Banner: https://images.unsplash.com/photo-1486006920555-c77dce18193b?q=80&w=1200&auto=format&fit=crop
+      - Hizmetler: https://images.unsplash.com/photo-1486006920555-c77dce18193b?q=80&w=600&auto=format&fit=crop, https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?q=80&w=600&auto=format&fit=crop, https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?q=80&w=600&auto=format&fit=crop
+      - Hakkımızda: https://images.unsplash.com/photo-1517524206127-48bbd363f3d7?q=80&w=800&auto=format&fit=crop
+    * Genel Perakende Dükkan / Diğer:
+      - Banner: https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=1200&auto=format&fit=crop
+      - Hizmetler: https://images.unsplash.com/photo-1472851294608-062f824d29cc?q=80&w=600&auto=format&fit=crop, https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?q=80&w=600&auto=format&fit=crop, https://images.unsplash.com/photo-1534452203293-494d7ddbf7e0?q=80&w=600&auto=format&fit=crop
+      - Hakkımızda: https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=800&auto=format&fit=crop
+  - Görsellerin tümüne Tailwind'in "object-cover" sınıfını verin, hafif zoom/hover animasyonları ("hover:scale-105 transition-transform duration-300") ve yuvarlatılmış köşeler kullanarak sitenin canlı, premium ve son derece profesyonel hissettirmesini sağlayın.
 - **Konum & Harita Entegrasyonu (KRİTİK):**
   - Sayfadaki harita iframe'i için kesinlikle şu URL'yi kullanın (iframe'in src özelliğine birebir yerleştirin): "${mapsEmbedUrl}"
   - "Haritalar'da Aç" butonu veya harita linkleri için kesinlikle şu yönlendirme URL'sini kullanın (href özelliğine birebir yerleştirin): "${mapsTargetUrl}"
@@ -60,6 +82,23 @@ Design Requirements:
 - The output MUST be ONLY the raw HTML code. Do not wrap it in markdown code blocks (no \`\`\`html or other annotations). Return just the raw index.html code.
 `;
 
+    const parts: any[] = [
+      {
+        text: prompt,
+      },
+    ];
+
+    if (params.downloadedPhotos && params.downloadedPhotos.length > 0) {
+      params.downloadedPhotos.forEach((photo) => {
+        parts.push({
+          inlineData: {
+            mimeType: photo.mimeType,
+            data: photo.base64,
+          },
+        });
+      });
+    }
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -68,11 +107,7 @@ Design Requirements:
       body: JSON.stringify({
         contents: [
           {
-            parts: [
-              {
-                text: prompt,
-              },
-            ],
+            parts: parts,
           },
         ],
       }),
@@ -106,13 +141,14 @@ Design Requirements:
   }
 
   /**
-   * Deploys the index.html content to Vercel dynamically.
+   * Deploys the index.html content to Vercel dynamically along with downloaded photos.
    * Creates a project name based on the business name.
    */
   static async deployToVercel(
     projectName: string,
     htmlContent: string,
-    vercelToken: string
+    vercelToken: string,
+    downloadedPhotos: { filename: string; base64: string; mimeType: string }[] = []
   ): Promise<string> {
     const url = 'https://api.vercel.com/v13/deployments';
 
@@ -126,6 +162,21 @@ Design Requirements:
       
     const uniqueSlug = `${projectSlug}-${Math.random().toString(36).substring(2, 7)}`;
 
+    const filesToDeploy = [
+      {
+        file: 'index.html',
+        data: htmlContent,
+      },
+    ];
+
+    downloadedPhotos.forEach((photo) => {
+      filesToDeploy.push({
+        file: photo.filename,
+        data: photo.base64,
+        encoding: 'base64',
+      } as any);
+    });
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -134,12 +185,7 @@ Design Requirements:
       },
       body: JSON.stringify({
         name: uniqueSlug,
-        files: [
-          {
-            file: 'index.html',
-            data: htmlContent,
-          },
-        ],
+        files: filesToDeploy,
         projectSettings: {
           framework: null,
         },
@@ -156,6 +202,7 @@ Design Requirements:
       throw new Error('Vercel deployment adresi döndürmedi.');
     }
 
-    return `https://${data.url}`;
+    // Return the clean project-level production alias domain instead of the long preview URL
+    return `https://${uniqueSlug}.vercel.app`;
   }
 }

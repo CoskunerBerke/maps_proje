@@ -153,6 +153,7 @@ export class PlacesService {
             isOpen: result.isOpen,
             searchSessionId: sessionId,
             callingStatus: 'Henüz aranmadı',
+            photos: place.photos ? JSON.stringify(place.photos) : null,
           },
           update: {
             name: place.name,
@@ -171,6 +172,7 @@ export class PlacesService {
             businessStatus: result.businessStatus,
             isOpen: result.isOpen,
             lastSeenAt: new Date(),
+            photos: place.photos ? JSON.stringify(place.photos) : null,
           },
         })
       );
@@ -267,6 +269,7 @@ export class PlacesService {
       'places.googleMapsUri',
       'places.businessStatus',
       'places.regularOpeningHours',
+      'places.photos',
     ].join(',');
 
     for (const chunk of chunks) {

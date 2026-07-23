@@ -445,6 +445,61 @@ router.post('/:id/generate-site', async (req: Request, res: Response) => {
       email = await findEmail(business.name, city);
     }
 
+    // 3.5 Fetch and download photos from Google Places API
+    let photosArray: any[] = [];
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY || '';
+    
+    if (business.photos) {
+      try {
+        photosArray = JSON.parse(business.photos);
+      } catch (e) {
+        console.error("Failed to parse business.photos", e);
+      }
+    }
+
+    // Dynamic fallback: if no photos exist in DB, fetch them dynamically
+    if ((!photosArray || photosArray.length === 0) && apiKey) {
+      try {
+        const detailsUrl = `https://places.googleapis.com/v1/places/${business.id}?fields=photos&key=${apiKey}`;
+        const res = await fetch(detailsUrl);
+        if (res.ok) {
+          const data: any = await res.json();
+          if (data.photos) {
+            photosArray = data.photos;
+            // Cache in DB for future generations
+            await prisma.business.update({
+              where: { id: business.id },
+              data: { photos: JSON.stringify(data.photos) }
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch photos dynamically in route:", err);
+      }
+    }
+
+    const downloadedPhotos: { filename: string; base64: string; mimeType: string }[] = [];
+    if (apiKey && photosArray && photosArray.length > 0) {
+      for (let i = 0; i < Math.min(photosArray.length, 4); i++) {
+        const photo = photosArray[i];
+        try {
+          const mediaUrl = `https://places.googleapis.com/v1/${photo.name}/media?key=${apiKey}&maxWidthPx=800`;
+          const mediaRes = await fetch(mediaUrl);
+          if (mediaRes.ok) {
+            const buffer = await mediaRes.arrayBuffer();
+            const base64 = Buffer.from(buffer).toString('base64');
+            downloadedPhotos.push({
+              filename: `photo-${i + 1}.jpg`,
+              base64: base64,
+              mimeType: 'image/jpeg'
+            });
+          }
+        } catch (e) {
+          console.error(`Failed to download photo ${i} in route:`, e);
+        }
+      }
+    }
+
     // 4. Generate HTML code via Gemini
     const category = business.primaryType || 'store';
     const htmlContent = await AIWebsiteService.generateHtml({
@@ -456,14 +511,16 @@ router.post('/:id/generate-site', async (req: Request, res: Response) => {
       reviewsCount: business.userRatingCount,
       geminiApiKey: settings.geminiApiKey,
       vercelToken: settings.vercelToken,
-      googleMapsUri: business.googleMapsUri
+      googleMapsUri: business.googleMapsUri,
+      downloadedPhotos: downloadedPhotos
     });
 
     // 5. Deploy to Vercel
     const demoWebsiteUrl = await AIWebsiteService.deployToVercel(
       business.name,
       htmlContent,
-      settings.vercelToken
+      settings.vercelToken,
+      downloadedPhotos
     );
 
     // 6. Log and save to Desktop
