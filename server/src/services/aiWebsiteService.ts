@@ -62,6 +62,14 @@ Design Requirements:
       - Hizmetler: https://images.unsplash.com/photo-1472851294608-062f824d29cc?q=80&w=600&auto=format&fit=crop, https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?q=80&w=600&auto=format&fit=crop, https://images.unsplash.com/photo-1534452203293-494d7ddbf7e0?q=80&w=600&auto=format&fit=crop
       - Hakkımızda: https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=800&auto=format&fit=crop
   - Görsellerin tümüne Tailwind'in "object-cover" sınıfını verin, hafif zoom/hover animasyonları ("hover:scale-105 transition-transform duration-300") ve yuvarlatılmış köşeler kullanarak sitenin canlı, premium ve son derece profesyonel hissettirmesini sağlayın.
+- **Arama Motoru Optimizasyonu (SEO) & Google Dostu Yapı (KRİTİK):**
+  - Sitede Google arama motorunun sevdiği ve üst sıralara çıkaran anahtar kelime zenginliğine dikkat edin.
+  - Sektör ve konuma göre (örneğin işletmenin adresindeki il/ilçe bilgisinden yola çıkarak, örn: "Ankara'nın En İyi Cafe ve Filtre Kahvecisi", "Kadıköy'de Profesyonel Saç Tasarım ve Güzellik Salonu") başlıklar (h1, h2) ve metinler oluşturun.
+  - Sayfa başlığını (<title>) işletme adı, kategorisi ve şehri içerecek şekilde arama odaklı yapın.
+  - Sayfa için açıklayıcı bir <meta name="description" content="..."> meta etiketi ekleyin. Bu açıklama bol anahtar kelimeli ve çekici olmalıdır.
+  - Google botlarının site hiyerarşisini kolayca anlaması için semantik HTML etiketleri (<header>, <main>, <section>, <article>, <footer>) kullanın.
+  - Tüm resimlere açıklayıcı ve anahtar kelime barındıran alt özellikleri ekleyin.
+  - Sayfanın en altına, Google botlarının işletme bilgilerini doğrudan okuyabilmesi için JSON-LD biçiminde LocalBusiness Yapılandırılmış Veri Şeması (<script type="application/ld+json">) ekleyin. Bu şema içinde işletmenin adı, kategorisi, adresi, telefonu, harita linki ve puanı yer almalıdır.
 - **Konum & Harita Entegrasyonu (KRİTİK):**
   - Sayfadaki harita iframe'i için kesinlikle şu URL'yi kullanın (iframe'in src özelliğine birebir yerleştirin): "${mapsEmbedUrl}"
   - "Haritalar'da Aç" butonu veya harita linkleri için kesinlikle şu yönlendirme URL'sini kullanın (href özelliğine birebir yerleştirin): "${mapsTargetUrl}"

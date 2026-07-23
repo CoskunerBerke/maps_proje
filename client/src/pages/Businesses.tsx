@@ -36,6 +36,22 @@ interface BusinessesProps {
   userLocation: { lat: number; lng: number } | null;
 }
 
+const getDomainSuggestion = (name: string) => {
+  const trMap: Record<string, string> = {
+    'ç': 'c', 'ğ': 'g', 'ı': 'i', 'ö': 'o', 'ş': 's', 'ü': 'u',
+    'Ç': 'c', 'Ğ': 'g', 'İ': 'i', 'Ö': 'o', 'Ş': 's', 'Ü': 'u',
+    'â': 'a', 'î': 'i', 'û': 'u', 'Â': 'a', 'Î': 'i', 'Û': 'u'
+  };
+  let slug = name;
+  for (const key in trMap) {
+    slug = slug.replace(new RegExp(key, 'g'), trMap[key]);
+  }
+  slug = slug.toLowerCase().trim()
+    .replace(/[^a-z0-9]/g, '')
+    .substring(0, 30);
+  return `www.${slug || 'isletmeniz'}.com`;
+};
+
 const CRM_STATUSES = [
   'Henüz aranmadı',
   'Arandı, ulaşılmadı',
@@ -774,7 +790,7 @@ export default function Businesses({ showToast, userLocation }: BusinessesProps)
                       <span className="font-bold text-sm">Müşteriye Teklif Gönder (Satış Otomasyonu)</span>
                     </div>
                     <p className="text-[11px] text-slate-400">
-                      Aşağıdaki hazır teklif şablonlarını kullanarak işletmeyle doğrudan iletişime geçebilirsiniz. Canlı demo linki şablonlara eklenmiştir.
+                      Berke Coşkuner olarak hazırladığım teklif şablonlarını aşağıdan doğrudan e-posta veya WhatsApp ile gönderebilirsin.
                     </p>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
@@ -796,8 +812,8 @@ export default function Businesses({ showToast, userLocation }: BusinessesProps)
                           <button
                             type="button"
                             onClick={() => {
-                              const subject = encodeURIComponent(`${selectedBusiness.name} İçin Özel Web Tasarım Teklifi`);
-                              const body = encodeURIComponent(`Merhaba Yetkili,\n\nGoogle Haritalar üzerindeki bilgilerinizi inceledik ve işletmeniz için modern, hızlı ve mobil uyumlu bir web sitesi tasarladık. Web sitenizin canlı demosuna aşağıdaki bağlantıdan ulaşabilirsiniz:\n\nDemoyu Görün: ${selectedBusiness.demoWebsiteUrl}\n\nEğer bu tasarımı beğendiyseniz, kendi alan adınızla (örn: www.isletmeniz.com) hemen yayına alabiliriz.\n\nDetaylar için bu e-postaya yanıt verebilir veya ${selectedBusiness.nationalPhoneNumber || 'telefon numaramız'} üzerinden bizimle iletişime geçebilirsiniz.\n\nSaygılarımızla,`);
+                              const subject = encodeURIComponent(`${selectedBusiness.name} İçin Özel Web Tasarım Çalışmam (Demo)`);
+                              const body = encodeURIComponent(`Merhaba Yetkili,\n\nBen Berke Coşkuner, 3. sınıf Bilgisayar Mühendisliği öğrencisiyim. Yerel işletmelerimizin dijitalleşmesine katkı sağlamak amacıyla bir çalışma yürütüyorum.\n\nGoogle Haritalar üzerindeki bilgilerinizi inceleyerek işletmeniz için modern, hızlı ve Google arama motorunun seveceği (SEO uyumlu) örnek bir web sitesi tasarladım. Hazırladığım ücretsiz demo tasarıma aşağıdaki bağlantıdan ulaşabilirsiniz:\n\nDemosu: ${selectedBusiness.demoWebsiteUrl}\n\nEğer bu çalışmayı beğenirseniz, sitenizi kendi alan adınızla (örneğin ${getDomainSuggestion(selectedBusiness.name)} adresiyle) kısa sürede yayına alıp teslim edebilirim. Sitedeki bilgileri, renkleri ve görselleri tamamen sizin isteklerinize göre düzenleyebilirim.\n\nDetayları görüşmek isterseniz bu e-postaya yanıt verebilir veya ${selectedBusiness.nationalPhoneNumber || 'telefon numaram'} üzerinden bana ulaşabilirsiniz.\n\nİyi çalışmalar dilerim.\n\nSaygılarımı sunarım,\nBerke Coşkuner`);
                               window.open(`mailto:${selectedBusiness.email || ''}?subject=${subject}&body=${body}`);
                             }}
                             className="flex-1 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold rounded text-[11px] flex items-center justify-center gap-1 transition-colors cursor-pointer"
@@ -808,7 +824,7 @@ export default function Businesses({ showToast, userLocation }: BusinessesProps)
                           <button
                             type="button"
                             onClick={() => {
-                              const text = `Konu: ${selectedBusiness.name} İçin Özel Web Tasarım Teklifi\n\nMerhaba Yetkili,\n\nGoogle Haritalar üzerindeki bilgilerinizi inceledik ve işletmeniz için modern, hızlı ve mobil uyumlu bir web sitesi tasarladık. Web sitenizin canlı demosuna aşağıdaki bağlantıdan ulaşabilirsiniz:\n\nDemoyu Görün: ${selectedBusiness.demoWebsiteUrl}\n\nEğer bu tasarımı beğendiyseniz, kendi alan adınızla hemen yayına alabiliriz.\n\nİyi çalışmalar.`;
+                              const text = `Konu: ${selectedBusiness.name} İçin Özel Web Tasarım Çalışmam (Demo)\n\nMerhaba Yetkili,\n\nBen Berke Coşkuner, 3. sınıf Bilgisayar Mühendisliği öğrencisiyim. Yerel işletmelerimizin dijitalleşmesine katkı sağlamak amacıyla bir çalışma yürütüyorum.\n\nGoogle Haritalar üzerindeki bilgilerinizi inceleyerek işletmeniz için modern, hızlı ve Google arama motorunun seveceği (SEO uyumlu) örnek bir web sitesi tasarladım. Hazırladığım ücretsiz demo tasarıma aşağıdaki bağlantıdan ulaşabilirsiniz:\n\nDemosu: ${selectedBusiness.demoWebsiteUrl}\n\nEğer bu çalışmayı beğenirseniz, sitenizi kendi alan adınızla (örneğin ${getDomainSuggestion(selectedBusiness.name)} adresiyle) kısa sürede yayına alıp teslim edebilirim. Sitedeki bilgileri, renkleri ve görselleri tamamen sizin isteklerinize göre düzenleyebilirim.\n\nDetayları görüşmek isterseniz bu e-postaya yanıt verebilir veya ${selectedBusiness.nationalPhoneNumber || 'telefon numaram'} üzerinden bana ulaşabilirsiniz.\n\nİyi çalışmalar dilerim.\n\nSaygılarımı sunarım,\nBerke Coşkuner`;
                               navigator.clipboard.writeText(text);
                               showToast("E-posta taslağı kopyalandı!", "success");
                             }}
@@ -839,11 +855,11 @@ export default function Businesses({ showToast, userLocation }: BusinessesProps)
                             type="button"
                             onClick={() => {
                               const phone = (selectedBusiness.internationalPhoneNumber || selectedBusiness.nationalPhoneNumber || '').replace(/[^0-9]/g, '');
-                              const text = encodeURIComponent(`Merhaba,\n\nGoogle Haritalar üzerindeki bilgilerinizi inceledik ve işletmeniz için özel bir web sitesi tasarladık. Web sitenizin canlı demosuna aşağıdaki bağlantıdan ulaşabilirsiniz:\n\n${selectedBusiness.demoWebsiteUrl}\n\nEğer bu tasarımı beğendiyseniz, kendi alan adınızla hemen yayına alabiliriz. İlgilenirseniz buradan yazabilirsiniz.\n\nİyi çalışmalar!`);
+                              const text = encodeURIComponent(`Merhaba, ben Berke Coşkuner. 3. sınıf Bilgisayar Mühendisliği öğrencisiyim.\n\nGoogle Haritalar üzerindeki bilgilerinizi inceleyerek işletmeniz için özel bir web sitesi tasarladım. Hazırladığım örnek demoya aşağıdaki bağlantıdan ulaşabilirsiniz:\n\n${selectedBusiness.demoWebsiteUrl}\n\nEğer bu çalışmayı beğenirseniz, sitenizi kendi alan adınızla (örneğin ${getDomainSuggestion(selectedBusiness.name)} adresiyle) yayına alıp teslim edebilirim. İlgilenirseniz buradan yazabilirsiniz.\n\nİyi çalışmalar dilerim!`);
                               window.open(`https://wa.me/${phone}?text=${text}`, '_blank');
                             }}
                             disabled={!(selectedBusiness.nationalPhoneNumber || selectedBusiness.internationalPhoneNumber)}
-                            className="flex-1 py-1.5 bg-green-600 hover:bg-green-500 disabled:bg-slate-800 disabled:text-slate-600 text-white font-bold rounded text-[11px] flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                            className="flex-1 py-1.5 bg-green-600 hover:bg-green-500 disabled:bg-slate-800 disabled:text-slate-650 text-white font-bold rounded text-[11px] flex items-center justify-center gap-1 transition-colors cursor-pointer"
                           >
                             <MessageCircle size={10} />
                             <span>WhatsApp Mesajı</span>
@@ -851,7 +867,7 @@ export default function Businesses({ showToast, userLocation }: BusinessesProps)
                           <button
                             type="button"
                             onClick={() => {
-                              const text = `Merhaba,\n\nGoogle Haritalar üzerindeki bilgilerinizi inceledik ve işletmeniz için özel bir web sitesi tasarladık. Web sitenizin canlı demosuna aşağıdaki bağlantıdan ulaşabilirsiniz:\n\n${selectedBusiness.demoWebsiteUrl}\n\nEğer bu tasarımı beğendiyseniz, kendi alan adınızla hemen yayına alabiliriz. İlgilenirseniz buradan yazabilirsiniz.\n\nİyi çalışmalar!`;
+                              const text = `Merhaba, ben Berke Coşkuner. 3. sınıf Bilgisayar Mühendisliği öğrencisiyim.\n\nGoogle Haritalar üzerindeki bilgilerinizi inceleyerek işletmeniz için özel bir web sitesi tasarladık. Hazırladığım örnek demoya aşağıdaki bağlantıdan ulaşabilirsiniz:\n\n${selectedBusiness.demoWebsiteUrl}\n\nEğer bu çalışmayı beğenirseniz, sitenizi kendi alan adınızla (örneğin ${getDomainSuggestion(selectedBusiness.name)} adresiyle) yayına alıp teslim edebilirim. İlgilenirseniz buradan yazabilirsiniz.\n\nİyi çalışmalar dilerim!`;
                               navigator.clipboard.writeText(text);
                               showToast("WhatsApp taslağı kopyalandı!", "success");
                             }}
