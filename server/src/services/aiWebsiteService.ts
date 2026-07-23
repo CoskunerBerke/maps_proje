@@ -127,14 +127,17 @@ Design Requirements:
       - Hizmetler: https://images.unsplash.com/photo-1472851294608-062f824d29cc?q=80&w=600&auto=format&fit=crop, https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?q=80&w=600&auto=format&fit=crop, https://images.unsplash.com/photo-1534452203293-494d7ddbf7e0?q=80&w=600&auto=format&fit=crop
       - Hakkımızda: https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=800&auto=format&fit=crop
   - Görsellerin tümüne Tailwind'in "object-cover" sınıfını verin, hafif zoom/hover animasyonları ("hover:scale-105 transition-transform duration-300") ve yuvarlatılmış köşeler kullanarak sitenin canlı, premium ve son derece profesyonel hissettirmesini sağlayın.
-- **Tasarım Şıklığı & Premium Görünüm Kuralları (KRİTİK - SİLİK YAZI VE SADE TASARIM ENGELİ):**
-  * Sitede düz gri arka planlar ve basit beyaz kutulardan oluşan ucuz/sade tasarımlar kesinlikle YAPMAYIN.
-  * **Metin Okunabilirliği ve Kontrast (ÇOK ÖNEMLİ):** Açık renk arka planlı alanlarda (örneğin beyaz veya açık gri arka plan) metin renkleri kesinlikle koyu ve net (text-slate-900 veya text-slate-800) olmalıdır. Açık gri (text-slate-300, text-slate-400) yazıları KESİNLİKLE açık arka planlarda kullanmayın, yazılar tamamen silik ve okunaksız kalmaktadır. Koyu arka planlı alanlarda ise tüm başlıklar ve yazılar beyaz veya çok açık gri (text-white, text-slate-100) olmalıdır. Sıkça Sorulan Sorular başlığının veya hizmet açıklamalarının arka planla aynı renkte silik kalmasını kesinlikle engelleyin!
-  * Arka planlarda düz renkler yerine şık CSS degrade (gradient) geçişleri (örneğin dark temalarda: to-slate-900 via-zinc-950 from-neutral-950), ince modern desenler veya dairesel parlamalar (radial blur glow) tercih edin.
-  * Kartları tasarlarken "Glassmorphism" (cam efekti) uygulayın: 'backdrop-blur-md bg-white/5 border border-white/10 hover:border-white/20 transition-all duration-300 shadow-2xl' ve hover edildiğinde kenarlarında hafif bir parlama (glow) veya shadow efekti olmasını sağlayın.
-  * Butonları 'bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-bold tracking-wide transition-all shadow-[0_0_15px_rgba(245,158,11,0.2)] hover:shadow-[0_0_25px_rgba(245,158,11,0.4)] px-6 py-3 rounded-xl' gibi son derece parlayan ve dinamik sınıflarla süsleyin.
-  * Metin başlıklarını çok daha estetik yapmak için degrade geçişli yazılar ('bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent') tercih edin.
-  * Hizmet kartlarının üstündeki resimleri hover edildiğinde büyüyecek şekilde ('overflow-hidden' bir kapsayıcı içinde 'hover:scale-105 transition-transform duration-500') kurgulayın.
+- **Tasarım Şıklığı & Premium Görünüm Kuralları (KRİTİK - SİLİK YAZI VE SİYAH BAŞLIK KESİNLİKLE YASAKTIR):**
+  * **KAPSAMLI KOYU TEMA (Luxury Dark Theme):** Web sitesinin tamamında tutarlı bir lüks koyu tema uygulayın. Ana sayfa arka planı: 'bg-slate-950 text-slate-100 min-h-screen'.
+  * **BAŞLIK KONTRASTI (HERO VE BÖLÜM BAŞLIKLARI):**
+    - Sitedeki tüm h1, h2, h3 ana başlıkları KESİNLİKLE koyu renk (slate-900, blue-950, siyah vb.) OLAMAZ!
+    - Hero (Karşılama) bölümü ve tüm diğer bölüm başlıkları ya tam BEYAZ ('text-white font-extrabold') ya da parlayan SARI/ALTIN DEGRADE ('bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent font-extrabold') olmalıdır.
+  * **KARTLAR VE HİZMETLER:**
+    - Tüm kartlar 'bg-slate-900/90 border border-slate-800 backdrop-blur-md rounded-2xl' biçiminde koyu şık zeminli olmalıdır. Sitede beyaz ('bg-white') kart zeminleri KESİNLİKLE YAPMAYIN.
+    - Kart içi başlıklar: KESİNLİKLE 'text-white font-bold text-xl' olmalıdır.
+    - Kart içi açıklamalar: KESİNLİKLE 'text-slate-300 text-sm' (koyu zeminde 100% net okunan açık gri) olmalıdır. Açık gri zemin üzerine açık gri yazı yazılması KESİNLİKLE YASAKTIR.
+  * **BUTONLAR VE ETKİLEŞİM:**
+    - Tüm CTA butonları son derece yüksek kontrastlı ve parlak olmalıdır (Örn: 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-6 py-3 rounded-xl shadow-lg shadow-amber-500/20'). Koyu arka plan üzerinde şeffaf veya siyah butonlar YAPMAYIN!
 - **Hareketli & İnteraktif Öğeler (KRİTİK - HATA KORUMALI JAVASCRIPT YAZIN):**
   * Sitede animasyonlar ve interaktif öğeler bolca yer almalı, kullanıcı sayfayı kaydırdıkça site yaşamalıdır.
   * **HATA KORUMASI (JavaScript Çökme Engeli):** Tüm JavaScript fonksiyonlarını ve kodlarını try-catch blokları içine alın. Sayaç animasyonu veya slider çalışırken oluşabilecek herhangi bir hata sayfanın diğer dinamik özelliklerini (sepeti, FAQ akordeonunu) KİLİTLEYEMEZ. Değerleri (Google puanı veya yorum sayıları gibi) DOM'dan parse etmeye çalışmak yerine doğrudan JavaScript kodunun içine statik sayısal değer olarak enjekte edin (örneğin: \`const targetRating = ${params.rating || 4.5};\` ve \`const targetReviewsCount = ${params.reviewsCount || 100};\`). Böylece parseFloat(null) veya DOM elementinin bulunamaması kaynaklı tüm JS hataları engellenir, sayaçlar asla 0.0 veya 0 olarak donup kalmaz!
@@ -272,14 +275,20 @@ Design Requirements:
     const fallbacks = FALLBACK_IMAGES[categoryKey] || FALLBACK_IMAGES.general;
     const downloadedCount = params.downloadedPhotos ? params.downloadedPhotos.length : 0;
 
-    htmlContent = htmlContent.replace(/(["'])\.?\/photo-(\d+)\.jpg(["'])/g, (match, p1, p2, p3) => {
+    // Stage 1: Ultra-broad regex matching photo-X, ./photo-X.jpg, /photo_X.png, photoX.webp etc.
+    htmlContent = htmlContent.replace(/(["']?)(?:\.\/|\/)?photo[-_]?(\d+)(?:\.(?:jpg|jpeg|png|webp))?([\s"'`>])/gi, (match, p1, p2, p3) => {
       const photoIndex = parseInt(p2, 10); // 1-indexed
       if (photoIndex > downloadedCount) {
-        // Fall back to matching category image index (wrap around fallback list if necessary)
         const fallbackUrl = fallbacks[(photoIndex - 1) % fallbacks.length];
         return `${p1}${fallbackUrl}${p3}`;
       }
       return match;
+    });
+
+    // Stage 2: Replace any empty src="" or src='' with a fallback URL
+    htmlContent = htmlContent.replace(/<img([^>]*)\bsrc=["']\s*["']([^>]*)>/gi, (match, before, after) => {
+      const fallbackUrl = fallbacks[1 % fallbacks.length];
+      return `<img${before}src="${fallbackUrl}"${after}>`;
     });
 
     return htmlContent;
