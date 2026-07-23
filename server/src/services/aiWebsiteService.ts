@@ -88,24 +88,25 @@ Design Requirements:
 - Use Google Fonts (e.g. Inter or Outfit) for modern typography.
 - Use Lucide Icons or FontAwesome CDN for clean icons.
 - Add a beautiful dark/light modern premium color scheme matching the industry (e.g., warm golden/slate tones for cafes, luxury rose/gold for beauty salons, clean corporate blue/gray for retail).
-- **Görseller ve Fotoğraflar (KRİTİK):**
+- **Görseller ve Fotoğraflar (KRİTİK - HER KARTTA RESİM ZORUNLUDUR):**
   - Kesinlikle boş gri kutular veya yer tutucu (placeholder) çizimler kullanmayın.
+  - **HER HİZMET KARTINDA RESİM ZORUNLULUĞU:** Sitedeki HER BİR hizmet kartı (Card 1, Card 2, Card 3, Card 4 vb.) KESİNLİKLE en üstünde bir <img> görsel etiketi İÇERMELİDİR! Görselsiz/resimsiz hizmet kartı tasarlamak KESİNLİKLE YASAKTIR.
   - Size bu işletmeye ait Google Haritalar'dan çekilen ${params.downloadedPhotos.length} adet fotoğraf gönderilmiştir. 
   - Lütfen bu fotoğrafları multimodal olarak tek tek analiz edin:
     1. Eğer fotoğrafta belirgin bir şekilde yakın çekim insan yüzleri, personel veya müşteri kalabalıkları var ise, o fotoğrafı web sitesinde KULLANMAYIN (yani "./photo-N.jpg" dosya yolunu src olarak atamayın).
-    2. Eğer fotoğrafta mekanın içi, dışı, ürünleri (örn: yemek tabağı, kahve fincanı, dükkan tezgahı, araçlar vb.) veya genel konsepti insansız (veya arka planda belirsiz insanlar olacak şekilde) görünüyorsa, o görseli "./photo-1.jpg", "./photo-2.jpg" gibi dosya isimleriyle (birinci fotoğraf için "./photo-1.jpg", ikincisi için "./photo-2.jpg" vb.) sitedeki ilgili yerlere (Hero, Hizmet Kartları, Hakkımızda vb.) yerleştirin.
+    2. Eğer fotoğrafta mekanın içi, dışı, ürünleri (örn: yemek tabağı, kahve fincanı, dükkan tezgahı, araçlar vb.) veya genel konsepti insansız görünüyorsa, o görseli "./photo-1.jpg", "./photo-2.jpg", "./photo-3.jpg", "./photo-4.jpg" olarak HER KARTA sırasıyla koyun.
   - **FOTOĞRAF YETMEZLİĞİ VE YEDEK KULLANIMI (KRİTİK - HİÇBİR RESMİ BOŞ/KIRIK BIRAKMAYIN):**
     * Eğer size gönderilen geçerli Google Haritalar fotoğrafı sayısı (örn: ${params.downloadedPhotos.length} adet), sitede kullanmak istediğiniz görsel sayısından az ise, KESİNLİKLE mevcut olmayan "./photo-2.jpg", "./photo-3.jpg" gibi uydurma yolları src olarak kullanmayın!
     * Örneğin sadece 1 adet fotoğraf gönderilmişse, sadece 1 adet görsel için "./photo-1.jpg" yolunu kullanın. Sitedeki diğer tüm görseller (Hizmet kartları, Hakkımızda, Banner vb.) için aşağıdaki listeden işletmeye en uygun olan konseptin Unsplash linklerini birebir kullanın.
-    * Kısacası: Sadece gerçekten mevcut olan './photo-1.jpg' ila './photo-N.jpg' (gönderilen son geçerli indexe kadar) arasındaki dosyaları kullanın; eksik kalan tüm görseller için aşağıdaki Unsplash linklerini doldurun. Sitede kesinlikle boş/kırık resim kutusu veya yüklenmeyen resim kalmamalıdır!
-    * Tüm <img> etiketlerine güvenlik amacıyla 'onerror="this.style.display=\'none\'"' veya 'onerror="this.src=\'[Unsplash yedek adresi]\'"' özelliğini mutlaka ekleyin. Bu sayede hiçbir şekilde kırık resim kutusu görünmeyecektir.
+    * Kısacası: Sadece gerçekten mevcut olan './photo-1.jpg' ila './photo-N.jpg' arasındaki dosyaları kullanın; eksik kalan tüm görseller için aşağıdaki Unsplash linklerini doldurun. Sitede kesinlikle boş/kırık resim kutusu veya yüklenmeyen resim kalmamalıdır!
+    * Tüm <img> etiketlerine güvenlik amacıyla 'onerror="this.style.display=\'none\'"' veya 'onerror="this.src=\'[Unsplash yedek adresi]\'"' özelliğini mutlaka ekleyin.
   - Eğer gönderilen fotoğrafların tamamında insan var ise veya hiç fotoğraf gönderilmemişse, aşağıdaki konseptlerden işletmeye uygun olanı için gerçekçi, yüksek kaliteli Unsplash fotoğraf linklerini kullanın (URL'yi birebir yazın, hayali link uydurmayın):
     * Erkek Kuaförü / Berber / Barber Shop (KRİTİK: KESİNLİKLE kadın saç modeli, oje, makyaj, doktor/medikal/hemşire görselleri KULLANMAYIN!):
-      - Banner (Ana Sayfa Görseli): https://images.unsplash.com/photo-1585747860715-2ba37e788b70?q=80&w=1200&auto=format&fit=crop (Lüks berber koltukları ve salon tasarımı)
-      - Saç Kesimi Görseli: https://images.unsplash.com/photo-1621605815971-fbc98d665033?q=80&w=600&auto=format&fit=crop (Erkek saç kesimi ve şekillendirme)
-      - Sakal Bakımı Görseli: https://images.unsplash.com/photo-1593702295094-aec22dfad693?q=80&w=600&auto=format&fit=crop (Erkek sakal tıraşı)
-      - Yıkama ve Cilt Bakımı Görseli: https://images.unsplash.com/photo-1605497746444-ac9dbd39f477?q=80&w=600&auto=format&fit=crop (Tarak, makas ve sakal bakım yağları)
-      - Hakkımızda Görseli: https://images.unsplash.com/photo-1503951914875-452162b0f3f1?q=80&w=800&auto=format&fit=crop (Geleneksel berber koltuğu ve makaslar)
+      - Banner (Ana Sayfa Görseli): https://images.unsplash.com/photo-1585747860715-2ba37e788b70?q=80&w=1200&auto=format&fit=crop
+      - Saç Kesimi Görseli: https://images.unsplash.com/photo-1621605815971-fbc98d665033?q=80&w=600&auto=format&fit=crop
+      - Sakal Bakımı Görseli: https://images.unsplash.com/photo-1593702295094-aec22dfad693?q=80&w=600&auto=format&fit=crop
+      - Yıkama ve Cilt Bakımı Görseli: https://images.unsplash.com/photo-1605497746444-ac9dbd39f477?q=80&w=600&auto=format&fit=crop
+      - Hakkımızda Görseli: https://images.unsplash.com/photo-1503951914875-452162b0f3f1?q=80&w=800&auto=format&fit=crop
     * Bayan Kuaförü / Güzellik Salonu / Spa / Manikür (KRİTİK: Erkek berberi için bunu KULLANMAYIN!):
       - Banner: https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=1200&auto=format&fit=crop
       - Hizmetler: https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=600&auto=format&fit=crop, https://images.unsplash.com/photo-1604654894610-df63bc536371?q=80&w=600&auto=format&fit=crop, https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?q=80&w=600&auto=format&fit=crop
@@ -129,15 +130,25 @@ Design Requirements:
   - Görsellerin tümüne Tailwind'in "object-cover" sınıfını verin, hafif zoom/hover animasyonları ("hover:scale-105 transition-transform duration-300") ve yuvarlatılmış köşeler kullanarak sitenin canlı, premium ve son derece profesyonel hissettirmesini sağlayın.
 - **Tasarım Şıklığı & Premium Görünüm Kuralları (KRİTİK - SİLİK YAZI VE SİYAH BAŞLIK KESİNLİKLE YASAKTIR):**
   * **KAPSAMLI KOYU TEMA (Luxury Dark Theme):** Web sitesinin tamamında tutarlı bir lüks koyu tema uygulayın. Ana sayfa arka planı: 'bg-slate-950 text-slate-100 min-h-screen'.
+  * **ÜST MENÜ LİNKLERİ (HEADER NAV LINKS KONTRASTI):**
+    - Üst navigasyon barında (Header) yer alan menü linkleri (Anasayfa, Hizmetler, Hakkımızda, Yorumlar, İletişim vb.) KESİNLİKLE karanlıkta kalan gri/siyah ('text-slate-600', 'text-slate-700', 'text-slate-500') OLAMAZ!
+    - Menü linkleri KESİNLİKLE parlak beyaz ('text-white font-medium hover:text-amber-400 transition-colors') olmalıdır!
   * **BAŞLIK KONTRASTI (HERO VE BÖLÜM BAŞLIKLARI):**
     - Sitedeki tüm h1, h2, h3 ana başlıkları KESİNLİKLE koyu renk (slate-900, blue-950, siyah vb.) OLAMAZ!
     - Hero (Karşılama) bölümü ve tüm diğer bölüm başlıkları ya tam BEYAZ ('text-white font-extrabold') ya da parlayan SARI/ALTIN DEGRADE ('bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent font-extrabold') olmalıdır.
   * **KARTLAR VE HİZMETLER:**
-    - Tüm kartlar 'bg-slate-900/90 border border-slate-800 backdrop-blur-md rounded-2xl' biçiminde koyu şık zeminli olmalıdır. Sitede beyaz ('bg-white') kart zeminleri KESİNLİKLE YAPMAYIN.
+    - Tüm kartlar 'bg-slate-900/90 border border-slate-800 backdrop-blur-md rounded-2xl overflow-hidden shadow-xl' biçiminde koyu şık zeminli olmalıdır. Sitede beyaz ('bg-white') kart zeminleri KESİNLİKLE YAPMAYIN.
+    - HER KARTIN ÜSTÜNDE RESİM YER ALMALIDIR: Kart görseli 'w-full h-48 object-cover' olarak en üste konmalı, altında p-6 iç dolgulu başlık ve açıklama olmalıdır.
     - Kart içi başlıklar: KESİNLİKLE 'text-white font-bold text-xl' olmalıdır.
-    - Kart içi açıklamalar: KESİNLİKLE 'text-slate-300 text-sm' (koyu zeminde 100% net okunan açık gri) olmalıdır. Açık gri zemin üzerine açık gri yazı yazılması KESİNLİKLE YASAKTIR.
+    - Kart içi açıklamalar: KESİNLİKLE 'text-slate-300 text-sm' (koyu zeminde 100% net okunan açık gri) olmalıdır.
   * **BUTONLAR VE ETKİLEŞİM:**
-    - Tüm CTA butonları son derece yüksek kontrastlı ve parlak olmalıdır (Örn: 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-6 py-3 rounded-xl shadow-lg shadow-amber-500/20'). Koyu arka plan üzerinde şeffaf veya siyah butonlar YAPMAYIN!
+    - Hero bölümündeki birincil buton ("Randevu Al"): 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-8 py-4 rounded-xl shadow-lg shadow-amber-500/20 transition-all'
+    - Hero bölümündeki ikincil buton ("Hizmetleri Keşfet"): KESİNLİKLE karanlık/siyah OLAMAZ! 'border-2 border-amber-400 text-white font-bold hover:bg-amber-400 hover:text-slate-950 px-8 py-4 rounded-xl transition-all backdrop-blur-sm' olmalıdır. Mouse getirilmese dahi çerçeve ve yazı parıl parıl beyaz görünmelidir!
+- **MOBİL VE TÜM TARAYICI UYUMLULUĞU (%100 RESPONSIVE - KRİTİK):**
+  * Web sitesi iPhone, Android, Tablet ve Tüm Masaüstü tarayıcılara %100 tam uyumlu (responsive) olmalıdır.
+  * Mobil görünümde kartlar tek sütun ('grid-cols-1 md:grid-cols-2 lg:grid-cols-3'), başlıklar mobilde ekran dışına taşmayacak şekilde responsive ('text-3xl sm:text-5xl lg:text-6xl font-extrabold') olmalıdır.
+  * Mobilde üst menü yazılarının üst üste binmemesi için esnek flex-wrap veya açılır mobil menü yapısı kullanın.
+  * Ana gövdeye 'overflow-x-hidden' ekleyerek mobilde yatay kaydırma çubuğu oluşmasını engelleyin.
 - **Hareketli & İnteraktif Öğeler (KRİTİK - HATA KORUMALI JAVASCRIPT YAZIN):**
   * Sitede animasyonlar ve interaktif öğeler bolca yer almalı, kullanıcı sayfayı kaydırdıkça site yaşamalıdır.
   * **HATA KORUMASI (JavaScript Çökme Engeli):** Tüm JavaScript fonksiyonlarını ve kodlarını try-catch blokları içine alın. Sayaç animasyonu veya slider çalışırken oluşabilecek herhangi bir hata sayfanın diğer dinamik özelliklerini (sepeti, FAQ akordeonunu) KİLİTLEYEMEZ. Değerleri (Google puanı veya yorum sayıları gibi) DOM'dan parse etmeye çalışmak yerine doğrudan JavaScript kodunun içine statik sayısal değer olarak enjekte edin (örneğin: \`const targetRating = ${params.rating || 4.5};\` ve \`const targetReviewsCount = ${params.reviewsCount || 100};\`). Böylece parseFloat(null) veya DOM elementinin bulunamaması kaynaklı tüm JS hataları engellenir, sayaçlar asla 0.0 veya 0 olarak donup kalmaz!
