@@ -96,10 +96,15 @@ Design Requirements:
   - Google botlarının site hiyerarşisini kolayca anlaması için semantik HTML etiketleri (<header>, <main>, <section>, <article>, <footer>) kullanın.
   - Tüm resimlere açıklayıcı ve anahtar kelime barındıran alt özellikleri ekleyin.
   - Sayfanın en altına, Google botlarının işletme bilgilerini doğrudan okuyabilmesi için JSON-LD biçiminde LocalBusiness Yapılandırılmış Veri Şeması (<script type="application/ld+json">) ekleyin. Bu şema içinde işletmenin adı, kategorisi, adresi, telefonu, harita linki ve puanı yer almalıdır.
-- **Konum & Harita Entegrasyonu (KRİTİK):**
+- **Konum & Harita Entegrasyonu (KRİTİK - ASLA SAYFAYI KASINDIRMAYIN):**
   - Sayfadaki harita iframe'i için kesinlikle şu URL'yi kullanın (iframe'in src özelliğine birebir yerleştirin): "${mapsEmbedUrl}"
+  - Harita iframe'ine performansı korumak için mutlaka loading="lazy" ve referrerpolicy="no-referrer-when-downgrade" özelliklerini ekleyin. Bu sayede harita sayfanın yüklenmesini engellemeyecek ve kasma yapmayacaktır.
   - "Haritalar'da Aç" butonu veya harita linkleri için kesinlikle şu yönlendirme URL'sini kullanın (href özelliğine birebir yerleştirin): "${mapsTargetUrl}"
   - Bu sayede kullanıcının tıkladığı buton doğrudan doğru adrese gidecek ve harita doğru yeri gösterecektir.
+- **Performans & Akıcılık Kuralları (KASMA/DONMA ENGELİ - KRİTİK):**
+  - Sayfadaki tüm görsellere (img etiketleri) mutlaka loading="lazy" özelliğini ekleyin.
+  - Sayaç animasyonları (count-up) veya slider geçişleri gibi JavaScript etkileşimlerinde, tarayıcının ana işlemcisini (main thread) bloke edecek sonsuz döngülerden veya ağır reflow tetikleyen kodlardan kaçının. Sayaçlar için requestAnimationFrame veya hafif setTimeout/setInterval (max 60fps) kullanın.
+  - Sitenin ilk açılışta akıcı ve hafif (smooth) çalışmasını garanti altına alın.
 - **Hizalamalar & Düzen (KRİTİK):**
   - Müşteri yorumları/puan bloğu (örneğin ${params.rating || 4.5} puanlık kısım) dahil tüm istatistiksel ve puan kartları kendi içinde **tam olarak yatay ve dikey olarak ortalanmalıdır**.
   - Tailwind sınıflarını (örneğin "flex flex-col items-center justify-center text-center mx-auto") kullanarak hiçbir yazının veya ikonun sola/sağa kaymamasını garanti altına edin.
