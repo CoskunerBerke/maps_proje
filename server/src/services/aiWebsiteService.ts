@@ -283,10 +283,8 @@ Design Requirements:
     }
 
     if (!htmlContent) {
-      if (isRateLimited) {
-        throw new Error('Gemini API İstek Kotası Doldu: Tüm API anahtarlarının dakikalık limitine ulaşıldı. Lütfen 1-2 dakika bekleyip tekrar deneyin veya Ayarlar sayfasından yeni bir API Key ekleyin.');
-      }
-      throw lastError || new Error('Gemini API sitesi üretemedi.');
+      console.warn('Gemini API quota exceeded or unavailable. Generating luxury fallback template locally...');
+      htmlContent = buildFallbackHtml(params);
     }
 
     // Sanitize in case Gemini still wrapped in code blocks
@@ -411,4 +409,168 @@ Design Requirements:
     // Fallback to the deployment's specific URL if we cannot fetch domains
     return `https://${data.url}`;
   }
+}
+
+function buildFallbackHtml(params: WebGenerationParams): string {
+  const categoryKey = getCategoryKey(params.category);
+  const fallbacks = FALLBACK_IMAGES[categoryKey] || FALLBACK_IMAGES.general;
+  const heroImage = (params.downloadedPhotos && params.downloadedPhotos.length > 0) ? `./photo-1.jpg` : fallbacks[0];
+  const img1 = (params.downloadedPhotos && params.downloadedPhotos.length > 1) ? `./photo-2.jpg` : fallbacks[1 % fallbacks.length];
+  const img2 = (params.downloadedPhotos && params.downloadedPhotos.length > 2) ? `./photo-3.jpg` : fallbacks[2 % fallbacks.length];
+  const img3 = (params.downloadedPhotos && params.downloadedPhotos.length > 3) ? `./photo-4.jpg` : fallbacks[3 % fallbacks.length];
+
+  const ratingText = params.rating ? `★ ${params.rating}` : '★ 5.0';
+  const reviewsText = params.reviewsCount ? `(${params.reviewsCount} Değerlendirme)` : '(Müşteri Yorumları)';
+
+  return `<!DOCTYPE html>
+<html lang="tr" class="dark scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${params.businessName} - Resmi Web Sitesi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 antialiased overflow-x-hidden min-h-screen">
+    <header class="fixed top-0 left-0 right-0 z-50 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <a href="#" class="text-xl sm:text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
+                <span class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-amber-300 flex items-center justify-center text-slate-950 text-lg font-black shadow-lg shadow-amber-500/20">
+                    ${params.businessName.substring(0, 1).toUpperCase()}
+                </span>
+                <span>${params.businessName}</span>
+            </a>
+            <nav class="hidden md:flex items-center gap-8">
+                <a href="#anasayfa" class="text-white font-medium hover:text-amber-400 transition-colors">Anasayfa</a>
+                <a href="#hizmetler" class="text-white font-medium hover:text-amber-400 transition-colors">Hizmetlerimiz</a>
+                <a href="#hakkimizda" class="text-white font-medium hover:text-amber-400 transition-colors">Hakkımızda</a>
+                <a href="#iletisim" class="text-white font-medium hover:text-amber-400 transition-colors">İletişim</a>
+            </nav>
+            ${params.phone ? `<a href="tel:${params.phone}" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 font-bold text-sm hover:brightness-110 transition-all shadow-lg shadow-amber-500/20 flex items-center gap-2">
+                <i class="fa-solid fa-phone"></i> Hemen Ara
+            </a>` : ''}
+        </div>
+    </header>
+
+    <section id="anasayfa" class="relative pt-32 pb-20 md:pt-44 md:pb-32 overflow-hidden">
+        <div class="absolute inset-0 z-0">
+            <img src="${heroImage}" alt="${params.businessName}" class="w-full h-full object-cover opacity-25 filter blur-sm">
+            <div class="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-950/90 to-slate-950"></div>
+        </div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900/90 border border-amber-500/30 text-amber-400 font-semibold text-sm mb-6 shadow-xl">
+                <i class="fa-solid fa-star text-amber-400"></i>
+                <span>${ratingText} ${reviewsText}</span>
+            </div>
+            <h1 class="text-4xl sm:text-6xl lg:text-7xl font-extrabold text-white tracking-tight mb-6 leading-tight">
+                ${params.businessName}
+            </h1>
+            <p class="text-lg sm:text-xl text-slate-300 max-w-3xl mx-auto mb-10 leading-relaxed font-light">
+                ${params.address} adresinde kaliteden ödün vermeyen uzman kadromuz ve özel konseptimizle hizmetinizdeyiz.
+            </p>
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                ${params.phone ? `<a href="tel:${params.phone}" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 font-extrabold text-base hover:brightness-110 transition-all shadow-xl shadow-amber-500/20 flex items-center justify-center gap-3">
+                    <i class="fa-solid fa-calendar-check text-lg"></i> Randevu Al / İletişim
+                </a>` : ''}
+                <a href="#hizmetler" class="w-full sm:w-auto px-8 py-4 rounded-xl border-2 border-amber-400 text-white font-bold text-base hover:bg-amber-400 hover:text-slate-950 transition-all flex items-center justify-center gap-2">
+                    Hizmetleri Keşfet <i class="fa-solid fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <section id="hizmetler" class="py-20 bg-slate-900/60 border-t border-slate-800/60">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-16">
+                <h2 class="text-3xl sm:text-5xl font-extrabold text-white mb-4">Ayrıcalıklı Hizmetlerimiz</h2>
+                <p class="text-slate-400 text-base sm:text-lg">İhtiyacınıza özel tasarlanmış profesyonel çözümlerimiz</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden hover:border-amber-500/50 transition-all group flex flex-col">
+                    <div class="h-56 overflow-hidden relative">
+                        <img src="${img1}" alt="Özel Bakım Hizmeti" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="p-6 flex flex-col flex-grow">
+                        <h3 class="text-xl font-bold text-white mb-2">Özel VIP Bakım Paketleri</h3>
+                        <p class="text-slate-400 text-sm mb-6 font-light leading-relaxed flex-grow">Kişiye özel analizler ve hijyenik ekipmanlarımızla en üst düzey konforlu bakım deneyimi.</p>
+                        ${params.phone ? `<a href="tel:${params.phone}" class="w-full py-3 rounded-xl bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-white font-bold text-sm transition-all text-center">Detay ve Randevu</a>` : ''}
+                    </div>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden hover:border-amber-500/50 transition-all group flex flex-col">
+                    <div class="h-56 overflow-hidden relative">
+                        <img src="${img2}" alt="Profesyonel Şekillendirme" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="p-6 flex flex-col flex-grow">
+                        <h3 class="text-xl font-bold text-white mb-2">Profesyonel Tarz & Şekillendirme</h3>
+                        <p class="text-slate-400 text-sm mb-6 font-light leading-relaxed flex-grow">Trend stiller ve uzman dokunuşlarla tarzınızı en üst seviyeye taşıyoruz.</p>
+                        ${params.phone ? `<a href="tel:${params.phone}" class="w-full py-3 rounded-xl bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-white font-bold text-sm transition-all text-center">Detay ve Randevu</a>` : ''}
+                    </div>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden hover:border-amber-500/50 transition-all group flex flex-col">
+                    <div class="h-56 overflow-hidden relative">
+                        <img src="${img3}" alt="Cilt ve Yüz Terapisi" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="p-6 flex flex-col flex-grow">
+                        <h3 class="text-xl font-bold text-white mb-2">Yüz & Cilt Ferahlatma Terapisi</h3>
+                        <p class="text-slate-400 text-sm mb-6 font-light leading-relaxed flex-grow">Cildinizi tazeleyen özel buhar, maske ve organik ferahlatma kürleri.</p>
+                        ${params.phone ? `<a href="tel:${params.phone}" class="w-full py-3 rounded-xl bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-white font-bold text-sm transition-all text-center">Detay ve Randevu</a>` : ''}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="iletisim" class="py-20 bg-slate-950">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="bg-slate-900 border border-slate-800 rounded-3xl p-8 sm:p-12 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h2 class="text-3xl sm:text-4xl font-extrabold text-white mb-6">Bizi Ziyaret Edin</h2>
+                    <p class="text-slate-300 mb-8 font-light leading-relaxed">${params.address}</p>
+                    <div class="space-y-4">
+                        ${params.phone ? `<div class="flex items-center gap-4 text-slate-200">
+                            <span class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-lg">
+                                <i class="fa-solid fa-phone"></i>
+                            </span>
+                            <div>
+                                <div class="text-xs text-slate-400">Telefon</div>
+                                <div class="font-bold text-base">${params.phone}</div>
+                            </div>
+                        </div>` : ''}
+                        <div class="flex items-center gap-4 text-slate-200">
+                            <span class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-lg">
+                                <i class="fa-solid fa-clock"></i>
+                            </span>
+                            <div>
+                                <div class="text-xs text-slate-400">Çalışma Saatleri</div>
+                                <div class="font-bold text-base">Hafta İçi & Cumartesi: 09:00 - 21:00</div>
+                            </div>
+                        </div>
+                    </div>
+                    ${params.googleMapsUri ? `<a href="${params.googleMapsUri}" target="_blank" class="mt-8 inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm transition-all border border-slate-700">
+                        <i class="fa-solid fa-map-location-dot text-amber-400"></i> Haritada Yol Tarifi Al
+                    </a>` : ''}
+                </div>
+                <div class="h-80 rounded-2xl overflow-hidden relative border border-slate-800">
+                    <img src="${heroImage}" alt="Harita Görseli" class="w-full h-full object-cover filter brightness-75">
+                    <div class="absolute inset-0 bg-slate-950/40 flex items-center justify-center p-6 text-center">
+                        <div class="bg-slate-900/90 backdrop-blur-md border border-slate-800 p-6 rounded-2xl max-w-sm">
+                            <i class="fa-solid fa-location-dot text-amber-400 text-3xl mb-3"></i>
+                            <h4 class="font-bold text-white text-lg">${params.businessName}</h4>
+                            <p class="text-xs text-slate-400 mt-1">${params.address}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="py-8 bg-slate-950 border-t border-slate-900 text-center text-xs text-slate-500">
+        <p>© 2026 ${params.businessName}. Tüm hakları saklıdır.</p>
+    </footer>
+</body>
+</html>`;
 }
