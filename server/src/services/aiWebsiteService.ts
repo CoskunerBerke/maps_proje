@@ -219,7 +219,7 @@ Design Requirements:
       throw new Error('Geçerli bir Gemini API Key bulunamadı.');
     }
 
-    const models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite'];
+    const models = ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-2.5-pro'];
     let lastError: any = null;
     let htmlContent = '';
     let isRateLimited = false;
