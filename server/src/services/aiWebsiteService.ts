@@ -214,15 +214,16 @@ Design Requirements:
       });
     }
 
-    const models = ['gemini-2.5-flash', 'gemini-1.5-flash'];
+    const models = ['gemini-2.5-flash', 'gemini-2.0-flash'];
     let lastError: any = null;
     let htmlContent = '';
+    let isRateLimited = false;
 
     for (const model of models) {
-      const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${params.geminiApiKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${params.geminiApiKey}`;
       
-      // Try up to 2 times for each model (in case of temporary 503/429)
-      for (let attempt = 1; attempt <= 2; attempt++) {
+      // Try up to 3 times for each model (in case of temporary 503/429)
+      for (let attempt = 1; attempt <= 3; attempt++) {
         try {
           const response = await fetch(url, {
             method: 'POST',
@@ -238,9 +239,10 @@ Design Requirements:
             }),
           });
 
-          if (response.status === 503 || response.status === 429) {
-            // Temporary overload, wait and retry
-            await new Promise((resolve) => setTimeout(resolve, 1500 * attempt));
+          if (response.status === 429 || response.status === 503) {
+            isRateLimited = true;
+            // Wait with backoff before retry (2s, 4s, 6s)
+            await new Promise((resolve) => setTimeout(resolve, 2000 * attempt));
             continue;
           }
 
@@ -256,8 +258,7 @@ Design Requirements:
           }
         } catch (err: any) {
           lastError = err;
-          // Wait a bit before next attempt
-          await new Promise((resolve) => setTimeout(resolve, 1000));
+          await new Promise((resolve) => setTimeout(resolve, 1500));
         }
       }
       if (htmlContent) {
@@ -266,6 +267,9 @@ Design Requirements:
     }
 
     if (!htmlContent) {
+      if (isRateLimited) {
+        throw new Error('Gemini API Kota Sınırı: Google dakikalık istek limitine ulaşıldı. Lütfen 10-15 saniye bekleyip tekrar deneyin.');
+      }
       throw lastError || new Error('Gemini API sitesi üretemedi.');
     }
 
