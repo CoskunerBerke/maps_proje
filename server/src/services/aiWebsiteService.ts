@@ -221,7 +221,28 @@ Design Requirements:
       throw new Error('Vercel deployment adresi döndürmedi.');
     }
 
-    // Return the clean project-level production alias domain instead of the long preview URL
-    return `https://${uniqueSlug}.vercel.app`;
+    // Vercel handles long project names and collisions by truncating or modifying the slug.
+    // Fetch the actual production domains assigned to this project to ensure we store the exact URL.
+    try {
+      const projectId = data.projectId || (data.project && typeof data.project === 'object' ? data.project.id : null) || data.name || uniqueSlug;
+      const domainsUrl = `https://api.vercel.com/v9/projects/${projectId}/domains`;
+      const domainsResponse = await fetch(domainsUrl, {
+        headers: {
+          Authorization: `Bearer ${vercelToken}`,
+        },
+      });
+      if (domainsResponse.ok) {
+        const domainsData: any = await domainsResponse.json();
+        if (domainsData.domains && domainsData.domains.length > 0) {
+          const primaryDomain = domainsData.domains.find((d: any) => d.redirect === null || !d.redirect) || domainsData.domains[0];
+          return `https://${primaryDomain.name}`;
+        }
+      }
+    } catch (err) {
+      console.error('Vercel domain listesi alınırken hata oluştu:', err);
+    }
+
+    // Fallback to the deployment's specific URL if we cannot fetch domains
+    return `https://${data.url}`;
   }
 }
