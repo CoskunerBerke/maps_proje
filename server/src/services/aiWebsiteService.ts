@@ -66,6 +66,109 @@ const getCategoryKey = (category: string | undefined, businessName: string | und
   return 'general';
 };
 
+interface CategoryTerminology {
+  sectionTitle: string;
+  sectionSubtitle: string;
+  cardButtonText: string;
+  headerButtonText: string;
+  heroPrimaryButtonText: string;
+  heroSecondaryButtonText: string;
+  reservationTitle: string;
+  reservationSubtitle: string;
+  reservationButtonText: string;
+  badgeText: string;
+  whatsappPreFill: string;
+  heroDesc: string;
+  serviceInputLabel: string;
+}
+
+const getCategoryTerminology = (categoryKey: string): CategoryTerminology => {
+  if (categoryKey === 'restaurant' || categoryKey === 'cafe') {
+    return {
+      sectionTitle: 'Menümüzden Seçkin Lezzetler',
+      sectionSubtitle: 'Sizin için özenle hazırlanan taze ve gurme lezzet seçeneklerimiz',
+      cardButtonText: 'Sipariş Ver / İncele',
+      headerButtonText: 'Masa Rezerve Et',
+      heroPrimaryButtonText: 'Online Sipariş & Rezervasyon',
+      heroSecondaryButtonText: 'Canlı Konum Gör',
+      reservationTitle: 'Masa Rezervasyonu & Sipariş',
+      reservationSubtitle: 'WhatsApp üzerinden hızlıca masanızı ayırtın veya siparişinizi iletin.',
+      reservationButtonText: 'Talebi WhatsApp İle Gönder',
+      badgeText: 'LEZZET DURAĞI',
+      whatsappPreFill: 'Merhaba, lezzetleriniz hakkında bilgi almak ve rezervasyon yapmak istiyorum.',
+      heroDesc: 'özenle seçilmiş taze malzemelerle hazırlanan eşsiz lezzetlerimiz ve konforlu ortamımızla hizmetinizdeyiz.',
+      serviceInputLabel: 'Seçilen Ürün / Menü'
+    };
+  }
+  if (categoryKey === 'barber') {
+    return {
+      sectionTitle: 'Erkek Bakım & Stil Hizmetleri',
+      sectionSubtitle: 'Tarzınızı yansıtan profesyonel berber çözümlerimiz',
+      cardButtonText: 'Randevu Oluştur',
+      headerButtonText: 'Randevu Al',
+      heroPrimaryButtonText: 'Online Randevu Al',
+      heroSecondaryButtonText: 'Canlı Konum Gör',
+      reservationTitle: 'Hızlı Randevu & Rezervasyon',
+      reservationSubtitle: 'WhatsApp üzerinden koltuğunuzu hemen ayırtın ve sıranızı beklemeyin.',
+      reservationButtonText: 'Randevuyu WhatsApp İle Onayla',
+      badgeText: 'ERKEK BAKIM',
+      whatsappPreFill: 'Merhaba, saç-sakal bakımı için randevu almak istiyorum.',
+      heroDesc: 'yüksek kalite standartlarımız, hijyenik ekipmanlarımız ve uzman berber kadromuzla hizmetinizdeyiz.',
+      serviceInputLabel: 'Seçilen Bakım Hizmeti'
+    };
+  }
+  if (categoryKey === 'beauty') {
+    return {
+      sectionTitle: 'Güzellik & Estetik Hizmetleri',
+      sectionSubtitle: 'Kendinizi şımartacağınız modern güzellik uygulamalarımız',
+      cardButtonText: 'Randevu Oluştur',
+      headerButtonText: 'Randevu Al',
+      heroPrimaryButtonText: 'Online Randevu Al',
+      heroSecondaryButtonText: 'Canlı Konum Gör',
+      reservationTitle: 'Hızlı Randevu & Rezervasyon',
+      reservationSubtitle: 'WhatsApp üzerinden seansınızı hemen ayırtın ve randevunuzu kesinleştirin.',
+      reservationButtonText: 'Randevuyu WhatsApp İle Onayla',
+      badgeText: 'GÜZELLİK SALONU',
+      whatsappPreFill: 'Merhaba, güzellik seansı için randevu almak istiyorum.',
+      heroDesc: 'lüks ve konforlu salonumuzda uzman estetisyen kadromuz ve modern ekipmanlarımızla hizmetinizdeyiz.',
+      serviceInputLabel: 'Seçilen Güzellik Seansı'
+    };
+  }
+  if (categoryKey === 'auto') {
+    return {
+      sectionTitle: 'Oto Servis & Bakım Hizmetleri',
+      sectionSubtitle: 'Aracınız için güvenilir, hızlı ve garantili teknik çözümler',
+      cardButtonText: 'Servis Talebi Oluştur',
+      headerButtonText: 'Servis Randevusu',
+      heroPrimaryButtonText: 'Servis Randevusu Al',
+      heroSecondaryButtonText: 'Canlı Konum Gör',
+      reservationTitle: 'Servis Randevusu & İletişim',
+      reservationSubtitle: 'Aracınızın bakım veya tamir randevusunu hemen WhatsApp\'tan planlayın.',
+      reservationButtonText: 'Randevuyu WhatsApp İle Onayla',
+      badgeText: 'OTO SERVİS',
+      whatsappPreFill: 'Merhaba, aracımın servis/bakım işlemleri için randevu almak istiyorum.',
+      heroDesc: 'en son teknoloji arıza tespit cihazlarımız ve tecrübeli usta kadromuzla hizmetinizdeyiz.',
+      serviceInputLabel: 'Seçilen Servis İşlemi'
+    };
+  }
+  // general fallback
+  return {
+    sectionTitle: 'Öne Çıkan Hizmetlerimiz',
+    sectionSubtitle: 'İşletmemize özel kaliteli, hızlı ve güvenilir çözümler',
+    cardButtonText: 'Detaylı Bilgi Al',
+    headerButtonText: 'İletişime Geç',
+    heroPrimaryButtonText: 'Hemen İletişime Geç',
+    heroSecondaryButtonText: 'Canlı Konum Gör',
+    reservationTitle: 'Hızlı İletişim & Bilgi',
+    reservationSubtitle: 'WhatsApp üzerinden bizimle hemen iletişime geçin ve bilgi alın.',
+    reservationButtonText: 'WhatsApp ile İletişim',
+    badgeText: 'PREMİUM HİZMET',
+    whatsappPreFill: 'Merhaba, hizmetleriniz hakkında detaylı bilgi almak istiyorum.',
+    heroDesc: 'yüksek memnuniyet hedefimiz, uzman kadromuz ve kaliteli çözümlerimizle hizmetinizdeyiz.',
+    serviceInputLabel: 'Seçilen Hizmet Konusu'
+  };
+};
+
 export class AIWebsiteService {
   /**
    * Generates a single-page modern landing page HTML string using Gemini API (2.5-flash)
@@ -130,6 +233,9 @@ Design Requirements:
       - Hizmetler: https://images.unsplash.com/photo-1472851294608-062f824d29cc?q=80&w=600&auto=format&fit=crop, https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?q=80&w=600&auto=format&fit=crop, https://images.unsplash.com/photo-1534452203293-494d7ddbf7e0?q=80&w=600&auto=format&fit=crop
       - Hakkımızda: https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=800&auto=format&fit=crop
   - Görsellerin tümüne Tailwind'in "object-cover" sınıfını verin, hafif zoom/hover animasyonları ("hover:scale-105 transition-transform duration-300") ve yuvarlatılmış köşeler kullanarak sitenin canlı, premium ve son derece profesyonel hissettirmesini sağlayın.
+- **Kategoriye Özel Terminoloji & Kelime Kuralları (KRİTİK - KONSEPT UYUMU):**
+  * Eğer ürettiğiniz yer bir KAFE, RESTORAN, YEMEK YERİ veya BAR ise: Sitede KESİNLİKLE "saç", "sakal", "tırnak", "bakım", "seans", "randevu", "appointment" kelimelerini kullanmayın! Butonlar, başlıklar ve linkler "Masa Rezerve Et", "Online Sipariş", "Menümüz", "Özel Lezzetler" olmalıdır. WhatsApp rezervasyon ön yazı mesajı: "Merhaba, lezzetleriniz hakkında bilgi almak ve masa rezervasyonu yaptırmak istiyorum." şeklinde olmalıdır.
+  * Eğer ürettiğiniz yer bir BERBER, KUAFÖR veya GÜZELLİK SALONU ise: Karta uygun "saç kesimi", "sakal tıraşı", "tırnak bakımı", "randevu al", "seans oluştur" kelimelerini kullanın.
 - **Tasarım Şıklığı & Aydınlık/Ferah Görünüm Kuralları (KRİTİK - SİYAH/BOĞUCU YAPAY ZEKA TEMALARI YASAKTIR):**
   * **AÇIK VE FERAH TEMA (Bright Light Modern Theme):** Web sitesinin tamamında son derece ferah, aydınlık, beyaz ağırlıklı ve lüks bir görünüm uygulayın. Ana sayfa gövdesi: 'bg-slate-50 text-slate-900 min-h-screen'. Siyah veya kasvetli karanlık temalardan kaçının!
   * **ÜST MENÜ LİNKLERİ (HEADER NAV LINKS):**
@@ -427,6 +533,8 @@ function buildFallbackHtml(params: WebGenerationParams): string {
   const ratingText = `★ ${ratingVal}`;
   const reviewsText = `(${reviewsVal} Değerlendirme)`;
 
+  const term = getCategoryTerminology(categoryKey);
+
   // 100% Verified HD Image Collections with automatic Google Maps photo preference
   const gPhotos = params.downloadedPhotos || [];
   const defaultFallback = 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?q=80&w=600&auto=format&fit=crop';
@@ -499,7 +607,7 @@ function buildFallbackHtml(params: WebGenerationParams): string {
             </a>
             <nav class="hidden md:flex items-center gap-8">
                 <a href="#anasayfa" class="text-slate-800 font-semibold hover:text-amber-600 transition-colors py-1">Anasayfa</a>
-                <a href="#hizmetler" class="text-slate-800 font-semibold hover:text-amber-600 transition-colors py-1">Hizmetlerimiz</a>
+                <a href="#hizmetler" class="text-slate-800 font-semibold hover:text-amber-600 transition-colors py-1">${term.sectionTitle}</a>
                 <a href="#harita" class="text-slate-800 font-semibold hover:text-amber-600 transition-colors py-1">Canlı Konum</a>
                 <a href="#iletisim" class="text-slate-800 font-semibold hover:text-amber-600 transition-colors py-1">İletişim</a>
             </nav>
@@ -508,7 +616,7 @@ function buildFallbackHtml(params: WebGenerationParams): string {
                     <i class="fa-solid fa-phone"></i> <span class="hidden sm:inline">Hemen Ara</span>
                 </a>` : ''}
                 <button onclick="openModal()" class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-800 hover:bg-slate-100 font-bold text-sm transition-all hidden sm:flex items-center gap-2">
-                    <i class="fa-solid fa-calendar-check text-amber-600"></i> Randevu Al
+                    <i class="fa-solid fa-calendar-check text-amber-600"></i> ${term.headerButtonText}
                 </button>
             </div>
         </div>
@@ -523,7 +631,7 @@ function buildFallbackHtml(params: WebGenerationParams): string {
                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                     <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                 </span>
-                <span class="text-slate-700 font-medium">Online Randevu Aktif</span>
+                <span class="text-slate-700 font-medium">${term.badgeText}</span>
                 <span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
                 <span class="text-amber-600 font-bold">${ratingText} ${reviewsText}</span>
             </div>
@@ -534,15 +642,15 @@ function buildFallbackHtml(params: WebGenerationParams): string {
             </h1>
 
             <p class="text-base sm:text-xl text-slate-600 max-w-3xl mx-auto mb-10 leading-relaxed font-normal">
-                ${params.address} adresinde yüksek kalite standartlarımız, hijyenik ekibimiz ve özel çözümlerimizle hizmetinizdeyiz.
+                ${params.address} adresinde ${term.heroDesc}
             </p>
 
             <div class="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-md mx-auto">
                 <button onclick="openModal()" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-extrabold text-base hover:shadow-xl hover:shadow-amber-500/20 transition-all flex items-center justify-center gap-3">
-                    <i class="fa-solid fa-calendar-check text-lg"></i> Online Randevu Al
+                    <i class="fa-solid fa-calendar-check text-lg"></i> ${term.heroPrimaryButtonText}
                 </button>
                 <a href="#harita" class="w-full sm:w-auto px-8 py-4 rounded-xl border-2 border-slate-900 text-slate-900 font-bold text-base hover:bg-slate-900 hover:text-white transition-all flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-map-location-dot"></i> Canlı Konum Gör
+                    <i class="fa-solid fa-map-location-dot"></i> ${term.heroSecondaryButtonText}
                 </a>
             </div>
 
@@ -679,7 +787,7 @@ function buildFallbackHtml(params: WebGenerationParams): string {
     </footer>
 
     <!-- Floating WhatsApp FAB -->
-    ${rawPhone ? `<a href="https://wa.me/${rawPhone}?text=Merhaba,%20randevu%20almak%20istiyorum" target="_blank" class="fixed bottom-6 right-6 z-50 w-14 h-14 bg-emerald-500 hover:bg-emerald-400 text-white rounded-full flex items-center justify-center text-2xl shadow-2xl hover:scale-110 transition-all duration-300 shadow-emerald-500/40 group" title="WhatsApp İle İletişime Geçin">
+    ${rawPhone ? `<a href="https://wa.me/${rawPhone}?text=${encodeURIComponent(term.whatsappPreFill)}" target="_blank" class="fixed bottom-6 right-6 z-50 w-14 h-14 bg-emerald-500 hover:bg-emerald-400 text-white rounded-full flex items-center justify-center text-2xl shadow-2xl hover:scale-110 transition-all duration-300 shadow-emerald-500/40 group" title="WhatsApp İle İletişime Geçin">
         <i class="fa-brands fa-whatsapp group-hover:rotate-12 transition-transform"></i>
     </a>` : ''}
 
@@ -689,21 +797,21 @@ function buildFallbackHtml(params: WebGenerationParams): string {
             <button onclick="closeModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 flex items-center justify-center">
                 <i class="fa-solid fa-xmark"></i>
             </button>
-            <h3 class="text-2xl font-extrabold text-slate-900 mb-2">Online Randevu Oluştur</h3>
-            <p class="text-xs text-slate-500 mb-6">Tarih ve hizmet seçerek anında randevunuzu tamamlayın.</p>
+            <h3 class="text-2xl font-extrabold text-slate-900 mb-2">${term.reservationTitle}</h3>
+            <p class="text-xs text-slate-500 mb-6">${term.reservationSubtitle}</p>
             <div class="space-y-4 text-xs">
                 <div>
-                    <label class="block font-semibold text-slate-700 mb-1">Seçilen Hizmet</label>
-                    <input type="text" id="modal-service" value="Özel Bakım Paketi" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 outline-none font-bold" readonly>
+                    <label class="block font-semibold text-slate-700 mb-1">${term.serviceInputLabel}</label>
+                    <input type="text" id="modal-service" value="Özel Seçenek" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 outline-none font-bold" readonly>
                 </div>
                 <div>
                     <label class="block font-semibold text-slate-700 mb-1">Tarih Seçin</label>
                     <input type="date" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 outline-none">
                 </div>
-                ${rawPhone ? `<a id="whatsapp-confirm-link" href="https://wa.me/${rawPhone}?text=Merhaba,%20randevu%20almak%20istiyorum" target="_blank" class="w-full py-4 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-extrabold text-sm flex items-center justify-center gap-2 hover:brightness-105 transition-all shadow-md">
-                    <i class="fa-brands fa-whatsapp text-lg"></i> Randevuyu WhatsApp İle Onayla
-                </a>` : `<button onclick="alert('Teşekkürler! Randevu talebiniz alınmıştır.')" class="w-full py-4 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-extrabold text-sm flex items-center justify-center gap-2">
-                    Randevuyu Tamamla
+                ${rawPhone ? `<a id="whatsapp-confirm-link" href="https://wa.me/${rawPhone}?text=${encodeURIComponent(term.whatsappPreFill)}" target="_blank" class="w-full py-4 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-extrabold text-sm flex items-center justify-center gap-2 hover:brightness-105 transition-all shadow-md">
+                    <i class="fa-brands fa-whatsapp text-lg"></i> ${term.reservationButtonText}
+                </a>` : `<button onclick="alert('Teşekkürler! Talebiniz alınmıştır.')" class="w-full py-4 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-extrabold text-sm flex items-center justify-center gap-2">
+                    Talebi Tamamla
                 </button>`}
             </div>
         </div>
@@ -723,7 +831,14 @@ function buildFallbackHtml(params: WebGenerationParams): string {
             const link = document.getElementById('whatsapp-confirm-link');
             if (link) {
                 const phone = '${rawPhone}';
-                link.href = 'https://wa.me/' + phone + '?text=' + encodeURIComponent('Merhaba, ' + serviceName + ' hizmeti için randevu almak istiyorum.');
+                const catKey = '${categoryKey}';
+                let msg = 'Merhaba, ' + serviceName + ' hakkında bilgi ve rezervasyon almak istiyorum.';
+                if (catKey === 'restaurant' || catKey === 'cafe') {
+                    msg = 'Merhaba, ' + serviceName + ' için sipariş veya masa rezervasyonu talebinde bulunmak istiyorum.';
+                } else if (catKey === 'barber' || catKey === 'beauty') {
+                    msg = 'Merhaba, ' + serviceName + ' seansı/hizmeti için randevu almak istiyorum.';
+                }
+                link.href = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
             }
             openModal();
         }
