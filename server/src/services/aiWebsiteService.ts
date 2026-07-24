@@ -430,6 +430,63 @@ Design Requirements:
       return `<img${before}src="${fallbackUrl}"${after}>`;
     });
 
+    // ── Reviews Carousel Injection (works for BOTH Gemini and fallback output) ──
+    if (params.reviews && params.reviews.length > 0) {
+      const goodReviews = params.reviews
+        .filter(r => r.rating >= 4 && r.text && r.text.trim().length > 10)
+        .slice(0, 12);
+
+      if (goodReviews.length > 0) {
+        const allReviews = [...goodReviews, ...goodReviews]; // duplicate for seamless infinite loop
+        const cards = allReviews.map(r => {
+          const stars = '★'.repeat(Math.min(r.rating, 5)) + '☆'.repeat(Math.max(5 - r.rating, 0));
+          const shortText = r.text.length > 180 ? r.text.substring(0, 180) + '…' : r.text;
+          const initial = r.authorName ? r.authorName.substring(0, 1).toUpperCase() : '?';
+          const timeLabel = r.relativeTime ? ` · ${r.relativeTime}` : '';
+          return `<div style="flex-shrink:0;width:300px;background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:24px;box-shadow:0 4px 16px rgba(0,0,0,.06);margin:0 12px;">
+  <div style="color:#f59e0b;font-size:18px;font-weight:700;letter-spacing:2px;margin-bottom:12px;">${stars}</div>
+  <p style="color:#475569;font-size:13px;line-height:1.7;margin-bottom:16px;font-style:italic;">"${shortText}"</p>
+  <div style="display:flex;align-items:center;gap:12px;border-top:1px solid #f1f5f9;padding-top:14px;">
+    <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#eab308);display:flex;align-items:center;justify-content:center;color:#0f172a;font-weight:800;font-size:14px;flex-shrink:0;">${initial}</div>
+    <div>
+      <div style="font-weight:700;color:#0f172a;font-size:12px;">${r.authorName}</div>
+      <div style="color:#94a3b8;font-size:11px;">Google Yorumu${timeLabel}</div>
+    </div>
+  </div>
+</div>`;
+        }).join('');
+
+        const animDuration = Math.max(goodReviews.length * 7, 35);
+        const reviewsHtml = `
+<!-- ═══════════ Google Reviews Carousel ═══════════ -->
+<section style="padding:60px 0;background:#f8fafc;border-top:1px solid #e2e8f0;overflow:hidden;">
+  <div style="max-width:1200px;margin:0 auto 40px;padding:0 24px;text-align:center;">
+    <span style="display:inline-block;padding:6px 16px;border-radius:999px;background:rgba(245,158,11,.12);color:#b45309;font-weight:700;font-size:11px;letter-spacing:1px;margin-bottom:12px;">GOOGLE MÜŞTERİ YORUMLARI</span>
+    <h2 style="margin:0 0 8px;font-size:clamp(22px,4vw,34px);font-weight:800;color:#0f172a;">Müşterilerimiz Ne Diyor?</h2>
+    <p style="margin:0;color:#64748b;font-size:14px;">Google Maps üzerinden gelen gerçek müşteri değerlendirmeleri</p>
+  </div>
+  <div style="position:relative;">
+    <div style="position:absolute;left:0;top:0;bottom:0;width:80px;background:linear-gradient(to right,#f8fafc,transparent);z-index:2;pointer-events:none;"></div>
+    <div style="position:absolute;right:0;top:0;bottom:0;width:80px;background:linear-gradient(to left,#f8fafc,transparent);z-index:2;pointer-events:none;"></div>
+    <div id="greviews-track" style="display:flex;animation:greviewsScroll ${animDuration}s linear infinite;width:max-content;">
+      ${cards}
+    </div>
+  </div>
+</section>
+<style>
+  @keyframes greviewsScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+  #greviews-track:hover{animation-play-state:paused}
+</style>`;
+
+        // Inject before </body>
+        if (htmlContent.includes('</body>')) {
+          htmlContent = htmlContent.replace('</body>', reviewsHtml + '\n</body>');
+        } else {
+          htmlContent += reviewsHtml;
+        }
+      }
+    }
+
     return htmlContent;
   }
 
@@ -707,51 +764,6 @@ function buildFallbackHtml(params: WebGenerationParams): string {
             </div>
         </div>
     </section>
-
-    ${(params.reviews && params.reviews.filter(r => r.rating >= 4).length > 0) ? (() => {
-      const goodReviews = params.reviews!.filter(r => r.rating >= 4 && r.text && r.text.trim().length > 10).slice(0, 12);
-      // Duplicate for seamless loop
-      const allReviews = [...goodReviews, ...goodReviews];
-      const cards = allReviews.map(r => {
-        const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
-        const shortText = r.text.length > 180 ? r.text.substring(0, 180) + '…' : r.text;
-        return `<div class="review-card flex-shrink-0 w-72 sm:w-80 bg-white border border-slate-200 rounded-2xl p-6 shadow-md mx-3">
-          <div class="text-amber-500 text-lg font-bold mb-3 tracking-wider">${stars}</div>
-          <p class="text-slate-700 text-sm leading-relaxed mb-4 font-normal italic">"${shortText}"</p>
-          <div class="flex items-center gap-3 border-t border-slate-100 pt-4">
-            <div class="w-9 h-9 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center text-slate-950 font-extrabold text-sm flex-shrink-0">${r.authorName.substring(0, 1).toUpperCase()}</div>
-            <div>
-              <div class="font-bold text-slate-900 text-xs">${r.authorName}</div>
-              <div class="text-slate-400 text-xs">Google Yorumu${r.relativeTime ? ' · ' + r.relativeTime : ''}</div>
-            </div>
-          </div>
-        </div>`;
-      }).join('');
-      const animDuration = Math.max(goodReviews.length * 6, 30);
-      return `
-    <!-- Reviews Infinite Scroll Section -->
-    <section class="py-16 bg-slate-50 border-t border-slate-200/60 overflow-hidden">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-10 text-center">
-            <span class="px-3.5 py-1.5 rounded-full bg-amber-500/10 text-amber-700 font-bold text-xs mb-3 inline-block">GOOGLE MÜŞTERİ YORUMLARI</span>
-            <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-2">Müşterilerimiz Ne Diyor?</h2>
-            <p class="text-slate-500 text-sm">Google Maps üzerinden gelen gerçek müşteri değerlendirmeleri</p>
-        </div>
-        <div class="relative">
-            <div class="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-slate-50 to-transparent z-10 pointer-events-none"></div>
-            <div class="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-slate-50 to-transparent z-10 pointer-events-none"></div>
-            <div id="reviews-track" class="flex" style="animation: reviewsScroll ${animDuration}s linear infinite; width: max-content;">
-                ${cards}
-            </div>
-        </div>
-        <style>
-            @keyframes reviewsScroll {
-                0%   { transform: translateX(0); }
-                100% { transform: translateX(-50%); }
-            }
-            #reviews-track:hover { animation-play-state: paused; }
-        </style>
-    </section>`;
-    })() : ''}
 
     <!-- Live Google Maps Embedded Section -->
     <section id="harita" class="py-20 bg-slate-50 border-t border-slate-200/60">
