@@ -56,12 +56,12 @@ const FALLBACK_IMAGES: Record<string, string[]> = {
   ]
 };
 
-const getCategoryKey = (category: string): string => {
-  const cat = category.toLowerCase();
+const getCategoryKey = (category: string | undefined, businessName: string | undefined): string => {
+  const cat = ((category || '') + ' ' + (businessName || '')).toLowerCase();
   if (cat.includes('berber') || cat.includes('barber') || cat.includes('erkek kuaf')) return 'barber';
   if (cat.includes('güzellik') || cat.includes('kuaför') || cat.includes('salon') || cat.includes('spa') || cat.includes('bayan')) return 'beauty';
-  if (cat.includes('cafe') || cat.includes('kahve') || cat.includes('fırın') || cat.includes('pastane')) return 'cafe';
-  if (cat.includes('restoran') || cat.includes('yemek') || cat.includes('kebap') || cat.includes('lokanta') || cat.includes('döner')) return 'restaurant';
+  if (cat.includes('cafe') || cat.includes('kahve') || cat.includes('fırın') || cat.includes('pastane') || cat.includes('coffee') || cat.includes('tatlı') || cat.includes('pastry') || cat.includes('bakery')) return 'cafe';
+  if (cat.includes('restoran') || cat.includes('yemek') || cat.includes('kebap') || cat.includes('lokanta') || cat.includes('döner') || cat.includes('gastronomi') || cat.includes('bistro') || cat.includes('pizza') || cat.includes('steak') || cat.includes('burger') || cat.includes('meyhane') || cat.includes('fast food') || cat.includes('bar') || cat.includes('pub') || cat.includes('ızgara') || cat.includes('pide') || cat.includes('lahmacun') || cat.includes('köfte') || cat.includes('çorba') || cat.includes('kennedy') || cat.includes('mutfak') || cat.includes('lezzet')) return 'restaurant';
   if (cat.includes('oto') || cat.includes('yıkama') || cat.includes('servis') || cat.includes('tamir') || cat.includes('araba')) return 'auto';
   return 'general';
 };
@@ -303,7 +303,7 @@ Design Requirements:
     htmlContent = htmlContent.trim();
 
     // Server-side rewrite of non-existent photo references to beautiful Unsplash fallbacks
-    const categoryKey = getCategoryKey(params.category);
+    const categoryKey = getCategoryKey(params.category, params.businessName);
     const fallbacks = FALLBACK_IMAGES[categoryKey] || FALLBACK_IMAGES.general;
     const downloadedCount = params.downloadedPhotos ? params.downloadedPhotos.length : 0;
 
@@ -415,7 +415,7 @@ Design Requirements:
 }
 
 function buildFallbackHtml(params: WebGenerationParams): string {
-  const categoryKey = getCategoryKey(params.category);
+  const categoryKey = getCategoryKey(params.category, params.businessName);
   const fallbacks = FALLBACK_IMAGES[categoryKey] || FALLBACK_IMAGES.general;
   const heroImage = (params.downloadedPhotos && params.downloadedPhotos.length > 0) ? `./photo-1.jpg` : fallbacks[0];
   const img1 = (params.downloadedPhotos && params.downloadedPhotos.length > 1) ? `./photo-2.jpg` : fallbacks[1 % fallbacks.length];
@@ -432,9 +432,9 @@ function buildFallbackHtml(params: WebGenerationParams): string {
   const defaultFallback = 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?q=80&w=600&auto=format&fit=crop';
 
   let services = [
-    { title: 'VIP Bakım & Şekillendirme Paketleri', desc: 'Kişiye özel analizler, hijyenik ekipmanlar ve uzman dokunuşlarla üst düzey konforlu bakım.', img: gPhotos[1] ? `./photo-2.jpg` : fallbacks[1 % fallbacks.length], fallbackImg: fallbacks[1 % fallbacks.length] || defaultFallback, price: 'Özel Fiyat' },
-    { title: 'Profesyonel Stil & Şekillendirme', desc: 'Son trend stiller, detaylı tasarım ve özgün konseptlerle görünümünüzü yenileyin.', img: gPhotos[2] ? `./photo-3.jpg` : fallbacks[2 % fallbacks.length], fallbackImg: fallbacks[2 % fallbacks.length] || defaultFallback, price: 'Popüler' },
-    { title: 'Yüz & Cilt Ferahlatma Terapisi', desc: 'Organik ferahlatma kürleri, derinlemesine buhar bakımı ve yenileyici özel uygulamalar.', img: gPhotos[3] ? `./photo-4.jpg` : fallbacks[3 % fallbacks.length], fallbackImg: fallbacks[3 % fallbacks.length] || defaultFallback, price: 'Tavsiye Edilen' }
+    { title: 'Ayrıcalıklı & Kaliteli Hizmet', desc: 'Müşteri memnuniyetini ön planda tutan profesyonel yaklaşımımız ve uzman kadromuzla hizmetinizdeyiz.', img: gPhotos[1] ? `./photo-2.jpg` : fallbacks[1 % fallbacks.length], fallbackImg: fallbacks[1 % fallbacks.length] || defaultFallback, price: 'Popüler' },
+    { title: 'Kişiye Özel Çözümler', desc: 'İhtiyaçlarınıza en uygun alternatifleri tecrübeli ekibimizle analiz ederek sunuyoruz.', img: gPhotos[2] ? `./photo-3.jpg` : fallbacks[2 % fallbacks.length], fallbackImg: fallbacks[2 % fallbacks.length] || defaultFallback, price: 'Özel Seri' },
+    { title: 'Güvenilirlik & Üstün Hijyen', desc: 'En yüksek hijyen, sağlık ve uluslararası kalite standartlarına uygun güvenli uygulamalar.', img: gPhotos[3] ? `./photo-4.jpg` : fallbacks[3 % fallbacks.length], fallbackImg: fallbacks[3 % fallbacks.length] || defaultFallback, price: 'Önerilen' }
   ];
 
   if (categoryKey === 'beauty') {
