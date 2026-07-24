@@ -500,6 +500,30 @@ router.post('/:id/generate-site', async (req: Request, res: Response) => {
       }
     }
 
+    // 3.7 Fetch Google Maps reviews (4-5 stars only)
+    let googleReviews: { authorName: string; rating: number; text: string; relativeTime?: string }[] = [];
+    if (apiKey) {
+      try {
+        const reviewsUrl = `https://places.googleapis.com/v1/places/${business.id}?fields=reviews&languageCode=tr&key=${apiKey}`;
+        const reviewsRes = await fetch(reviewsUrl);
+        if (reviewsRes.ok) {
+          const reviewsData: any = await reviewsRes.json();
+          if (reviewsData.reviews && Array.isArray(reviewsData.reviews)) {
+            googleReviews = reviewsData.reviews
+              .filter((r: any) => r.rating >= 4 && r.text?.text && r.text.text.trim().length > 10)
+              .map((r: any) => ({
+                authorName: r.authorAttribution?.displayName || 'Müşteri',
+                rating: r.rating,
+                text: r.text?.text || '',
+                relativeTime: r.relativePublishTimeDescription || undefined
+              }));
+          }
+        }
+      } catch (err) {
+        console.error('Google reviews fetch failed:', err);
+      }
+    }
+
     // 4. Generate HTML code via Gemini
     const category = business.primaryType || 'store';
     const htmlContent = await AIWebsiteService.generateHtml({
@@ -512,7 +536,8 @@ router.post('/:id/generate-site', async (req: Request, res: Response) => {
       geminiApiKey: settings.geminiApiKey,
       vercelToken: settings.vercelToken,
       googleMapsUri: business.googleMapsUri,
-      downloadedPhotos: downloadedPhotos
+      downloadedPhotos: downloadedPhotos,
+      reviews: googleReviews
     });
 
     // 5. Deploy to Vercel

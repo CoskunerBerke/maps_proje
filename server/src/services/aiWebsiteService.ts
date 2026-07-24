@@ -9,6 +9,7 @@ interface WebGenerationParams {
   vercelToken: string;
   googleMapsUri: string | null;
   downloadedPhotos: { filename: string; base64: string; mimeType: string }[];
+  reviews?: { authorName: string; rating: number; text: string; relativeTime?: string }[];
 }
 
 const FALLBACK_IMAGES: Record<string, string[]> = {
@@ -706,6 +707,51 @@ function buildFallbackHtml(params: WebGenerationParams): string {
             </div>
         </div>
     </section>
+
+    ${(params.reviews && params.reviews.filter(r => r.rating >= 4).length > 0) ? (() => {
+      const goodReviews = params.reviews!.filter(r => r.rating >= 4 && r.text && r.text.trim().length > 10).slice(0, 12);
+      // Duplicate for seamless loop
+      const allReviews = [...goodReviews, ...goodReviews];
+      const cards = allReviews.map(r => {
+        const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
+        const shortText = r.text.length > 180 ? r.text.substring(0, 180) + '…' : r.text;
+        return `<div class="review-card flex-shrink-0 w-72 sm:w-80 bg-white border border-slate-200 rounded-2xl p-6 shadow-md mx-3">
+          <div class="text-amber-500 text-lg font-bold mb-3 tracking-wider">${stars}</div>
+          <p class="text-slate-700 text-sm leading-relaxed mb-4 font-normal italic">"${shortText}"</p>
+          <div class="flex items-center gap-3 border-t border-slate-100 pt-4">
+            <div class="w-9 h-9 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center text-slate-950 font-extrabold text-sm flex-shrink-0">${r.authorName.substring(0, 1).toUpperCase()}</div>
+            <div>
+              <div class="font-bold text-slate-900 text-xs">${r.authorName}</div>
+              <div class="text-slate-400 text-xs">Google Yorumu${r.relativeTime ? ' · ' + r.relativeTime : ''}</div>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+      const animDuration = Math.max(goodReviews.length * 6, 30);
+      return `
+    <!-- Reviews Infinite Scroll Section -->
+    <section class="py-16 bg-slate-50 border-t border-slate-200/60 overflow-hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-10 text-center">
+            <span class="px-3.5 py-1.5 rounded-full bg-amber-500/10 text-amber-700 font-bold text-xs mb-3 inline-block">GOOGLE MÜŞTERİ YORUMLARI</span>
+            <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-2">Müşterilerimiz Ne Diyor?</h2>
+            <p class="text-slate-500 text-sm">Google Maps üzerinden gelen gerçek müşteri değerlendirmeleri</p>
+        </div>
+        <div class="relative">
+            <div class="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-slate-50 to-transparent z-10 pointer-events-none"></div>
+            <div class="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-slate-50 to-transparent z-10 pointer-events-none"></div>
+            <div id="reviews-track" class="flex" style="animation: reviewsScroll ${animDuration}s linear infinite; width: max-content;">
+                ${cards}
+            </div>
+        </div>
+        <style>
+            @keyframes reviewsScroll {
+                0%   { transform: translateX(0); }
+                100% { transform: translateX(-50%); }
+            }
+            #reviews-track:hover { animation-play-state: paused; }
+        </style>
+    </section>`;
+    })() : ''}
 
     <!-- Live Google Maps Embedded Section -->
     <section id="harita" class="py-20 bg-slate-50 border-t border-slate-200/60">
