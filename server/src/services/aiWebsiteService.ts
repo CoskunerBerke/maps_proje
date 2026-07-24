@@ -130,22 +130,22 @@ Design Requirements:
       - Hizmetler: https://images.unsplash.com/photo-1472851294608-062f824d29cc?q=80&w=600&auto=format&fit=crop, https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?q=80&w=600&auto=format&fit=crop, https://images.unsplash.com/photo-1534452203293-494d7ddbf7e0?q=80&w=600&auto=format&fit=crop
       - Hakkımızda: https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=800&auto=format&fit=crop
   - Görsellerin tümüne Tailwind'in "object-cover" sınıfını verin, hafif zoom/hover animasyonları ("hover:scale-105 transition-transform duration-300") ve yuvarlatılmış köşeler kullanarak sitenin canlı, premium ve son derece profesyonel hissettirmesini sağlayın.
-- **Tasarım Şıklığı & Premium Görünüm Kuralları (KRİTİK - SİLİK YAZI VE SİYAH BAŞLIK KESİNLİKLE YASAKTIR):**
-  * **KAPSAMLI KOYU TEMA (Luxury Dark Theme):** Web sitesinin tamamında tutarlı bir lüks koyu tema uygulayın. Ana sayfa arka planı: 'bg-slate-950 text-slate-100 min-h-screen'.
-  * **ÜST MENÜ LİNKLERİ (HEADER NAV LINKS KONTRASTI):**
-    - Üst navigasyon barında (Header) yer alan menü linkleri (Anasayfa, Hizmetler, Hakkımızda, Yorumlar, İletişim vb.) KESİNLİKLE karanlıkta kalan gri/siyah ('text-slate-600', 'text-slate-700', 'text-slate-500') OLAMAZ!
-    - Menü linkleri KESİNLİKLE parlak beyaz ('text-white font-medium hover:text-amber-400 transition-colors') olmalıdır!
+- **Tasarım Şıklığı & Aydınlık/Ferah Görünüm Kuralları (KRİTİK - SİYAH/BOĞUCU YAPAY ZEKA TEMALARI YASAKTIR):**
+  * **AÇIK VE FERAH TEMA (Bright Light Modern Theme):** Web sitesinin tamamında son derece ferah, aydınlık, beyaz ağırlıklı ve lüks bir görünüm uygulayın. Ana sayfa gövdesi: 'bg-slate-50 text-slate-900 min-h-screen'. Siyah veya kasvetli karanlık temalardan kaçının!
+  * **ÜST MENÜ LİNKLERİ (HEADER NAV LINKS):**
+    - Üst navigasyon barında (Header) 'bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-sm' kullanın.
+    - Menü linkleri koyu gri/siyah okunaklı ('text-slate-800 font-semibold hover:text-amber-600 transition-colors') olmalıdır!
   * **BAŞLIK KONTRASTI (HERO VE BÖLÜM BAŞLIKLARI):**
-    - Sitedeki tüm h1, h2, h3 ana başlıkları KESİNLİKLE koyu renk (slate-900, blue-950, siyah vb.) OLAMAZ!
-    - Hero (Karşılama) bölümü ve tüm diğer bölüm başlıkları ya tam BEYAZ ('text-white font-extrabold') ya da parlayan SARI/ALTIN DEGRADE ('bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent font-extrabold') olmalıdır.
+    - Sitedeki tüm h1, h2, h3 ana başlıkları pırıl pırıl koyu slate ('text-slate-900 font-extrabold') veya canlı vurgulu renklerle tasarlanmalıdır.
+    - Sitede hiçbir başlık silik veya okunaksız olamaz!
   * **KARTLAR VE HİZMETLER:**
-    - Tüm kartlar 'bg-slate-900/90 border border-slate-800 backdrop-blur-md rounded-2xl overflow-hidden shadow-xl' biçiminde koyu şık zeminli olmalıdır. Sitede beyaz ('bg-white') kart zeminleri KESİNLİKLE YAPMAYIN.
-    - HER KARTIN ÜSTÜNDE RESİM YER ALMALIDIR: Kart görseli 'w-full h-48 object-cover' olarak en üste konmalı, altında p-6 iç dolgulu başlık ve açıklama olmalıdır.
-    - Kart içi başlıklar: KESİNLİKLE 'text-white font-bold text-xl' olmalıdır.
-    - Kart içi açıklamalar: KESİNLİKLE 'text-slate-300 text-sm' (koyu zeminde 100% net okunan açık gri) olmalıdır.
+    - Tüm kartlar 'bg-white border border-slate-200/90 rounded-3xl overflow-hidden shadow-lg shadow-slate-200/50 hover:-translate-y-2 hover:shadow-2xl transition-all duration-300' biçiminde beyaz ferah zeminli olmalıdır.
+    - HER KARTIN ÜSTÜNDE RESİM YER ALMALIDIR: Kart görseli 'w-full h-56 object-cover' olarak en üste konmalı, altında p-6 iç dolgulu başlık ve açıklama olmalıdır.
+    - Kart içi başlıklar: 'text-slate-900 font-bold text-xl' olmalıdır.
+    - Kart içi açıklamalar: 'text-slate-600 text-sm leading-relaxed' olmalıdır.
   * **BUTONLAR VE ETKİLEŞİM:**
-    - Hero bölümündeki birincil buton ("Randevu Al"): 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-8 py-4 rounded-xl shadow-lg shadow-amber-500/20 transition-all'
-    - Hero bölümündeki ikincil buton ("Hizmetleri Keşfet"): KESİNLİKLE karanlık/siyah OLAMAZ! 'border-2 border-amber-400 text-white font-bold hover:bg-amber-400 hover:text-slate-950 px-8 py-4 rounded-xl transition-all backdrop-blur-sm' olmalıdır. Mouse getirilmese dahi çerçeve ve yazı parıl parıl beyaz görünmelidir!
+    - Hero bölümündeki birincil buton ("Randevu Al"): 'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-extrabold px-8 py-4 rounded-xl shadow-lg shadow-amber-500/20 hover:brightness-105 transition-all'
+    - Hero bölümündeki ikincil buton ("Hizmetleri Keşfet"): 'border-2 border-slate-900 text-slate-900 font-bold hover:bg-slate-900 hover:text-white px-8 py-4 rounded-xl transition-all' olmalıdır.
 - **MOBİL VE TÜM TARAYICI UYUMLULUĞU (%100 RESPONSIVE - KRİTİK):**
   * Web sitesi iPhone, Android, Tablet ve Tüm Masaüstü tarayıcılara %100 tam uyumlu (responsive) olmalıdır.
   * Mobil görünümde kartlar tek sütun ('grid-cols-1 md:grid-cols-2 lg:grid-cols-3'), başlıklar mobilde ekran dışına taşmayacak şekilde responsive ('text-3xl sm:text-5xl lg:text-6xl font-extrabold') olmalıdır.
@@ -165,7 +165,6 @@ Design Requirements:
        - Bu sepet yapısı hem görsel olarak geri bildirim sağlayacak hem de sepete ekle özelliğinin çalıştığını kanıtlayacaktır!
     3. **Yorum Slider'ı (Testimonials Carousel):** Müşteri yorumlarını tek bir alanda gösterip sağ/sol oklarla veya otomatik geçişle (carousel) dönmesini sağlayan basit ve şık bir JavaScript slider yapın.
     4. **Soru-Cevap Sıkça Sorulan Sorular (FAQ Accordion):** Soruların üzerine tıklandığında cevapların aşağı doğru akıcı bir şekilde açılıp kapandığı (accordion) bir bölüm oluşturun. Soru satırına tıklandığında altındaki cevabı gizleyen/gösteren JavaScript kodunu yazın (örneğin classList.toggle('hidden') ile).
-    5. **Karanlık / Aydınlık Mod (Theme Toggle):** Sayfanın sağ üst köşesine tıklanıldığında tüm sitenin temasını değiştiren şık bir JavaScript buton/geçiş anahtarı ekleyin.
 - **Arama Motoru Optimizasyonu (SEO) & Google Dostu Yapı (KRİTİK):**
   - Sitede Google arama motorunun sevdiği ve üst sıralara çıkaran anahtar kelime zenginliğine dikkat edin.
   - Sektör ve konuma göre (örneğin işletmenin adresindeki il/ilçe bilgisinden yola çıkarak, örn: "Ankara'nın En İyi Cafe ve Filtre Kahvecisi", "Kadıköy'de Profesyonel Saç Tasarım ve Güzellik Salonu") başlıklar (h1, h2) ve metinler oluşturun.
@@ -174,10 +173,12 @@ Design Requirements:
   - Google botlarının site hiyerarşisini kolayca anlaması için semantik HTML etiketleri (<header>, <main>, <section>, <article>, <footer>) kullanın.
   - Tüm resimlere açıklayıcı ve anahtar kelime barındıran alt özellikleri ekleyin.
   - Sayfanın en altına, Google botlarının işletme bilgilerini doğrudan okuyabilmesi için JSON-LD biçiminde LocalBusiness Yapılandırılmış Veri Şeması (<script type="application/ld+json">) ekleyin. Bu şema içinde işletmenin adı, kategorisi, adresi, telefonu, harita linki ve puanı yer almalıdır.
-- **Konum & Harita Entegrasyonu (KRİTİK - ASLA SAYFAYI KASINDIRMAYIN):**
-  - Sayfadaki harita iframe'i için kesinlikle şu URL'yi kullanın (iframe'in src özelliğine birebir yerleştirin): "${mapsEmbedUrl}"
-  - Harita iframe'ine performansı korumak için mutlaka loading="lazy" ve referrerpolicy="no-referrer-when-downgrade" özelliklerini ekleyin. Bu sayede harita sayfanın yüklenmesini engellemeyecek ve kasma yapmayacaktır.
-  - "Haritalar'da Aç" butonu veya harita linkleri için kesinlikle şu yönlendirme URL'sini kullanın (href özelliğine birebir yerleştirin): "${mapsTargetUrl}"
+- **CANLI GOOGLE HARİTA İFRAME ENTEGRASYONU (KRİTİK - MUTLAKA SAYFAYA EKLEYİN):**
+  - Sayfada işletmenin canlı konumunu gösteren interaktif harita iframe'i KESİNLİKLE yer almalıdır.
+  - Harita iframe'i için kesinlikle şu URL'yi kullanın (iframe'in src özelliğine birebir yerleştirin): "${mapsEmbedUrl}"
+  - Harita iframe'ine performansı korumak için mutlaka loading="lazy" ve referrerpolicy="no-referrer-when-downgrade" özelliklerini ekleyin.
+  - Örnek: <iframe src="${mapsEmbedUrl}" class="w-full h-96 rounded-2xl border-0" allowfullscreen="" loading="lazy"></iframe>
+  - "Haritalar'da Yol Tarifi Al" butonu için yönlendirme URL'si: "${mapsTargetUrl}"
   - Bu sayede kullanıcının tıkladığı buton doğrudan doğru adrese gidecek ve harita doğru yeri gösterecektir.
 - **Performans & Akıcılık Kuralları (KASMA/DONMA ENGELİ - KRİTİK):**
   - Sayfadaki tüm görsellere (img etiketleri) mutlaka loading="lazy" özelliğini ekleyin.
@@ -449,15 +450,16 @@ function buildFallbackHtml(params: WebGenerationParams): string {
   } else if (categoryKey === 'food' || categoryKey === 'cafe') {
     services = [
       { title: 'Gurme Özel Menü & İmzalı Lezzetler', desc: 'Taze tarladan masaya konseptimizle hazırlanan eşsiz lezzetler ve lezzet şöleni.', img: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=600&auto=format&fit=crop', price: 'Özel Menü' },
-      { title: 'Special Kahve & İçecek Çeşitleri', desc: 'Özel kavrum çekirdeklerden barista imzalı sıcak ve soğuk kahve seçenekleri.', img: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=600&auto=format&fit=crop', price: 'En Sevilen' },
-      { title: 'El Yapımı Ev Yapımı Tatlılar', desc: 'Günlük taze üretilen gurme tatlılar, çıtır çıtır lezzetler ve lezzet kombinasyonları.', img: 'https://images.unsplash.com/photo-1551024601-bec78aea704b?q=80&w=600&auto=format&fit=crop', price: 'Taze Taze' }
+      { title: 'Special Kahve & İçecek Çeşitleri', desc: 'Özel kavrum çekirdeklerden barista imzalı sıcak ve soğuk kahve seçenekleri.', img: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=600&auto=format&fit=crop', price: 'En Sevilen' }
     ];
   }
 
   const rawPhone = params.phone ? params.phone.replace(/[^0-9]/g, '') : '';
+  const mapsEmbedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(params.businessName + ' ' + params.address)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+  const mapsTargetUrl = params.googleMapsUri || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(params.businessName + ' ' + params.address)}`;
 
-  return `<!DOCTYPE html>
-<html lang="tr" class="dark scroll-smooth">
+          return `<!DOCTYPE html>
+<html lang="tr" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -467,138 +469,115 @@ function buildFallbackHtml(params: WebGenerationParams): string {
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-        }
-        @keyframes pulseGlow {
-            0%, 100% { opacity: 0.3; transform: scale(1); }
-            50% { opacity: 0.6; transform: scale(1.08); }
-        }
-        .animate-float { animation: float 4s ease-in-out infinite; }
-        .animate-glow { animation: pulseGlow 6s ease-in-out infinite; }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 antialiased overflow-x-hidden min-h-screen relative">
-
-    <!-- Ambient Glowing Background Orbs -->
-    <div class="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-gradient-to-tr from-amber-500/15 via-yellow-500/10 to-purple-500/10 blur-[140px] rounded-full pointer-events-none animate-glow z-0"></div>
-    <div class="fixed bottom-10 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-amber-400/10 via-amber-600/5 to-transparent blur-[150px] rounded-full pointer-events-none z-0"></div>
+<body class="bg-slate-50 text-slate-900 antialiased overflow-x-hidden min-h-screen relative">
 
     <!-- Header Navigation -->
-    <header class="fixed top-0 left-0 right-0 z-50 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 transition-all">
+    <header class="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-sm transition-all">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-            <a href="#" class="text-xl sm:text-2xl font-extrabold text-white tracking-tight flex items-center gap-3 group">
-                <span class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 via-amber-400 to-yellow-300 flex items-center justify-center text-slate-950 text-lg font-black shadow-lg shadow-amber-500/25 group-hover:scale-110 transition-transform">
+            <a href="#" class="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3 group">
+                <span class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-400 flex items-center justify-center text-slate-950 text-lg font-black shadow-md group-hover:scale-105 transition-transform">
                     ${params.businessName.substring(0, 1).toUpperCase()}
                 </span>
-                <span class="bg-gradient-to-r from-white to-slate-200 bg-clip-text text-transparent">${params.businessName}</span>
+                <span class="text-slate-900 font-extrabold">${params.businessName}</span>
             </a>
             <nav class="hidden md:flex items-center gap-8">
-                <a href="#anasayfa" class="text-white font-medium hover:text-amber-400 transition-colors py-1">Anasayfa</a>
-                <a href="#hizmetler" class="text-white font-medium hover:text-amber-400 transition-colors py-1">Hizmetlerimiz</a>
-                <a href="#hakkimizda" class="text-white font-medium hover:text-amber-400 transition-colors py-1">Hakkımızda</a>
-                <a href="#iletisim" class="text-white font-medium hover:text-amber-400 transition-colors py-1">İletişim</a>
+                <a href="#anasayfa" class="text-slate-800 font-semibold hover:text-amber-600 transition-colors py-1">Anasayfa</a>
+                <a href="#hizmetler" class="text-slate-800 font-semibold hover:text-amber-600 transition-colors py-1">Hizmetlerimiz</a>
+                <a href="#harita" class="text-slate-800 font-semibold hover:text-amber-600 transition-colors py-1">Canlı Konum</a>
+                <a href="#iletisim" class="text-slate-800 font-semibold hover:text-amber-600 transition-colors py-1">İletişim</a>
             </nav>
             <div class="flex items-center gap-3">
-                ${params.phone ? `<a href="tel:${params.phone}" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 font-extrabold text-sm hover:brightness-110 transition-all shadow-lg shadow-amber-500/20 flex items-center gap-2">
-                    <i class="fa-solid fa-phone animate-bounce"></i> <span class="hidden sm:inline">Hemen Ara</span>
+                ${params.phone ? `<a href="tel:${params.phone}" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-extrabold text-sm hover:brightness-105 transition-all shadow-md shadow-amber-500/20 flex items-center gap-2">
+                    <i class="fa-solid fa-phone"></i> <span class="hidden sm:inline">Hemen Ara</span>
                 </a>` : ''}
-                <button onclick="openModal()" class="px-5 py-2.5 rounded-xl border border-amber-500/40 text-amber-300 hover:bg-amber-500/10 font-bold text-sm transition-all hidden sm:flex items-center gap-2">
-                    <i class="fa-solid fa-calendar-check"></i> Randevu Al
+                <button onclick="openModal()" class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-800 hover:bg-slate-100 font-bold text-sm transition-all hidden sm:flex items-center gap-2">
+                    <i class="fa-solid fa-calendar-check text-amber-600"></i> Randevu Al
                 </button>
             </div>
         </div>
     </header>
 
     <!-- Hero Section -->
-    <section id="anasayfa" class="relative pt-32 pb-24 md:pt-48 md:pb-36 overflow-hidden z-10">
-        <div class="absolute inset-0 z-0">
-            <img src="${heroImage}" alt="${params.businessName}" class="w-full h-full object-cover opacity-20 filter blur-sm scale-105">
-            <div class="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-950/95 to-slate-950"></div>
-        </div>
-
+    <section id="anasayfa" class="relative pt-32 pb-20 md:pt-44 md:pb-32 bg-gradient-to-b from-amber-50/70 via-slate-50 to-white overflow-hidden">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
             <!-- Pulsing Badge -->
-            <div class="inline-flex items-center gap-3 px-5 py-2.5 rounded-full bg-slate-900/90 border border-amber-500/40 text-amber-300 font-semibold text-xs sm:text-sm mb-8 shadow-2xl backdrop-blur-md animate-float">
+            <div class="inline-flex items-center gap-3 px-5 py-2.5 rounded-full bg-white border border-slate-200 text-slate-800 font-semibold text-xs sm:text-sm mb-8 shadow-md">
                 <span class="relative flex h-2.5 w-2.5">
                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                     <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                 </span>
-                <span class="text-slate-300 font-medium">Online Randevu Aktif</span>
-                <span class="w-1.5 h-1.5 rounded-full bg-amber-500/60"></span>
-                <span class="text-amber-400 font-bold">${ratingText} ${reviewsText}</span>
+                <span class="text-slate-700 font-medium">Online Randevu Aktif</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+                <span class="text-amber-600 font-bold">${ratingText} ${reviewsText}</span>
             </div>
 
-            <!-- Glowing Main Title -->
-            <h1 class="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight mb-8 leading-tight">
-                <span class="block text-white mb-2">${params.businessName}</span>
-                <span class="bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent font-extrabold">
-                    Ayrıcalıklı & Kusursuz Deneyim
-                </span>
+            <!-- Main Title -->
+            <h1 class="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-slate-900 mb-8 leading-tight max-w-4xl mx-auto">
+                ${params.businessName}
             </h1>
 
-            <p class="text-base sm:text-xl text-slate-300 max-w-3xl mx-auto mb-12 leading-relaxed font-light">
-                ${params.address} adresinde en kaliteli malzemeler, uzman kadromuz ve özel hijyen standartlarımızla hizmetinizdeyiz.
+            <p class="text-base sm:text-xl text-slate-600 max-w-3xl mx-auto mb-10 leading-relaxed font-normal">
+                ${params.address} adresinde yüksek kalite standartlarımız, hijyenik ekibimiz ve özel çözümlerimizle hizmetinizdeyiz.
             </p>
 
             <div class="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-md mx-auto">
-                <button onclick="openModal()" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 font-extrabold text-base hover:brightness-110 transition-all shadow-xl shadow-amber-500/25 flex items-center justify-center gap-3 group">
-                    <i class="fa-solid fa-calendar-check text-lg group-hover:scale-125 transition-transform"></i> Online Randevu Al
+                <button onclick="openModal()" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-extrabold text-base hover:shadow-xl hover:shadow-amber-500/20 transition-all flex items-center justify-center gap-3">
+                    <i class="fa-solid fa-calendar-check text-lg"></i> Online Randevu Al
                 </button>
-                <a href="#hizmetler" class="w-full sm:w-auto px-8 py-4 rounded-xl border-2 border-amber-400 text-white font-bold text-base hover:bg-amber-400 hover:text-slate-950 transition-all flex items-center justify-center gap-2 backdrop-blur-md">
-                    Hizmetleri Keşfet <i class="fa-solid fa-arrow-down text-sm"></i>
+                <a href="#harita" class="w-full sm:w-auto px-8 py-4 rounded-xl border-2 border-slate-900 text-slate-900 font-bold text-base hover:bg-slate-900 hover:text-white transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-map-location-dot"></i> Canlı Konum Gör
                 </a>
             </div>
 
-            <!-- Live Count-Up Stats Bar -->
-            <div class="mt-20 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto pt-10 border-t border-slate-800/80">
-                <div class="bg-slate-900/60 border border-slate-800/80 p-5 rounded-2xl backdrop-blur-md">
-                    <div class="text-2xl sm:text-3xl font-extrabold text-amber-400 mb-1" id="stat-rating">${ratingVal}</div>
-                    <div class="text-xs text-slate-400 font-medium">Google Müşteri Puanı</div>
+            <!-- Count-Up Stats Bar -->
+            <div class="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto pt-10 border-t border-slate-200">
+                <div class="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-sm">
+                    <div class="text-2xl sm:text-3xl font-extrabold text-amber-600 mb-1">${ratingVal}</div>
+                    <div class="text-xs text-slate-500 font-medium">Google Müşteri Puanı</div>
                 </div>
-                <div class="bg-slate-900/60 border border-slate-800/80 p-5 rounded-2xl backdrop-blur-md">
-                    <div class="text-2xl sm:text-3xl font-extrabold text-amber-400 mb-1" id="stat-reviews">${reviewsVal}+</div>
-                    <div class="text-xs text-slate-400 font-medium">Değerlendirme & Yorum</div>
+                <div class="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-sm">
+                    <div class="text-2xl sm:text-3xl font-extrabold text-amber-600 mb-1">${reviewsVal}+</div>
+                    <div class="text-xs text-slate-500 font-medium">Değerlendirme & Yorum</div>
                 </div>
-                <div class="bg-slate-900/60 border border-slate-800/80 p-5 rounded-2xl backdrop-blur-md">
-                    <div class="text-2xl sm:text-3xl font-extrabold text-amber-400 mb-1">%100</div>
-                    <div class="text-xs text-slate-400 font-medium">Hijyen & Kalite</div>
+                <div class="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-sm">
+                    <div class="text-2xl sm:text-3xl font-extrabold text-amber-600 mb-1">%100</div>
+                    <div class="text-xs text-slate-500 font-medium">Hijyen & Kalite</div>
                 </div>
-                <div class="bg-slate-900/60 border border-slate-800/80 p-5 rounded-2xl backdrop-blur-md">
-                    <div class="text-2xl sm:text-3xl font-extrabold text-amber-400 mb-1">Uzman</div>
-                    <div class="text-xs text-slate-400 font-medium">Profesyonel Kadro</div>
+                <div class="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-sm">
+                    <div class="text-2xl sm:text-3xl font-extrabold text-amber-600 mb-1">Uzman</div>
+                    <div class="text-xs text-slate-500 font-medium">Profesyonel Kadro</div>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- Services Section -->
-    <section id="hizmetler" class="py-24 bg-slate-900/60 border-t border-slate-800/60 relative z-10">
+    <section id="hizmetler" class="py-20 bg-white border-t border-slate-200/60">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center max-w-3xl mx-auto mb-16">
-                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold text-xs mb-3">
-                    <i class="fa-solid fa-sparkles"></i> POPÜLER SEÇENEKLER
-                </div>
-                <h2 class="text-3xl sm:text-5xl font-extrabold text-white mb-4">Ayrıcalıklı Hizmetlerimiz</h2>
-                <p class="text-slate-400 text-base sm:text-lg font-light">En yüksek standartlarda hazırlanan konsept hizmet çeşitlerimiz</p>
+                <span class="px-3.5 py-1.5 rounded-full bg-amber-500/10 text-amber-700 font-bold text-xs mb-3 inline-block">
+                    HİZMETLERİMİZ
+                </span>
+                <h2 class="text-3xl sm:text-5xl font-extrabold text-slate-900 mb-4">Özel Bakım & Konsept Seçenekler</h2>
+                <p class="text-slate-600 text-base sm:text-lg">İhtiyacınıza uygun profesyonel çözümlerimiz</p>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                ${services.map((s, idx) => `
-                <div class="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden hover:-translate-y-3 hover:border-amber-500/60 hover:shadow-2xl hover:shadow-amber-500/20 transition-all duration-500 group flex flex-col">
-                    <div class="h-64 overflow-hidden relative">
-                        <img src="${s.img}" alt="${s.title}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
-                        <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-80"></div>
-                        <span class="absolute top-4 right-4 px-3.5 py-1.5 rounded-full bg-slate-950/80 backdrop-blur-md border border-amber-500/40 text-amber-300 font-bold text-xs shadow-lg">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-${services.length} gap-8">
+                ${services.map((s) => `
+                <div class="bg-white border border-slate-200/90 rounded-3xl overflow-hidden hover:-translate-y-2 hover:shadow-2xl hover:shadow-slate-300/60 transition-all duration-300 group flex flex-col">
+                    <div class="h-60 overflow-hidden relative">
+                        <img src="${s.img}" alt="${s.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                        <span class="absolute top-4 right-4 px-3.5 py-1.5 rounded-full bg-slate-900/90 text-amber-400 font-bold text-xs shadow-md">
                             ${s.price}
                         </span>
                     </div>
-                    <div class="p-8 flex flex-col flex-grow">
-                        <h3 class="text-xl sm:text-2xl font-bold text-white mb-3 group-hover:text-amber-400 transition-colors">${s.title}</h3>
-                        <p class="text-slate-300 text-sm mb-8 font-light leading-relaxed flex-grow">${s.desc}</p>
-                        <button onclick="selectService('${s.title}')" class="w-full py-3.5 rounded-xl bg-slate-800/90 hover:bg-gradient-to-r hover:from-amber-400 hover:to-yellow-500 hover:text-slate-950 text-white font-bold text-sm transition-all border border-slate-700/80 flex items-center justify-center gap-2">
-                            <span>Randevu Oluştur</span> <i class="fa-solid fa-arrow-right text-xs"></i>
+                    <div class="p-6 flex flex-col flex-grow">
+                        <h3 class="text-lg sm:text-xl font-bold text-slate-900 mb-2 group-hover:text-amber-600 transition-colors">${s.title}</h3>
+                        <p class="text-slate-600 text-xs sm:text-sm mb-6 font-normal leading-relaxed flex-grow">${s.desc}</p>
+                        <button onclick="selectService('${s.title}')" class="w-full py-3.5 rounded-xl bg-slate-900 hover:bg-amber-500 hover:text-slate-950 text-white font-bold text-xs transition-all text-center">
+                            Randevu Oluştur
                         </button>
                     </div>
                 </div>
@@ -607,20 +586,35 @@ function buildFallbackHtml(params: WebGenerationParams): string {
         </div>
     </section>
 
-    <!-- Location & Hours Section -->
-    <section id="iletisim" class="py-24 bg-slate-950 relative z-10">
+    <!-- Live Google Maps Embedded Section -->
+    <section id="harita" class="py-20 bg-slate-50 border-t border-slate-200/60">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="bg-slate-900 border border-slate-800 rounded-3xl p-8 sm:p-14 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative overflow-hidden shadow-2xl">
-                <div class="absolute -right-20 -bottom-20 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="text-center max-w-3xl mx-auto mb-12">
+                <span class="px-3.5 py-1.5 rounded-full bg-amber-500/10 text-amber-800 font-bold text-xs mb-3 inline-block">
+                    CANLI KONUM & HARİTA
+                </span>
+                <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-3">Haritada Canlı Konumumuz</h2>
+                <p class="text-slate-600 text-sm sm:text-base">${params.address}</p>
+            </div>
+            <div class="bg-white p-4 rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
+                <iframe src="${mapsEmbedUrl}" class="w-full h-[450px] rounded-2xl border-0" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+            </div>
+        </div>
+    </section>
+
+    <!-- Location & Contact Info Section -->
+    <section id="iletisim" class="py-20 bg-white border-t border-slate-200/60">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="bg-slate-900 text-white rounded-3xl p-8 sm:p-14 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center shadow-2xl">
                 <div>
-                    <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold text-xs mb-4">
-                        <i class="fa-solid fa-location-dot"></i> ADRES & İLETİŞİM
-                    </div>
-                    <h2 class="text-3xl sm:text-4xl font-extrabold text-white mb-6">Bizi Ziyaret Edin</h2>
+                    <span class="px-3.5 py-1.5 rounded-full bg-amber-500/20 text-amber-400 font-bold text-xs mb-4 inline-block">
+                        İLETİŞİM & BİLGİ
+                    </span>
+                    <h2 class="text-3xl sm:text-4xl font-extrabold text-white mb-6">${params.businessName}</h2>
                     <p class="text-slate-300 mb-8 font-light text-base leading-relaxed">${params.address}</p>
                     <div class="space-y-5">
-                        ${params.phone ? `<div class="flex items-center gap-4 text-slate-200">
-                            <span class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-lg shrink-0">
+                        ${params.phone ? `<div class="flex items-center gap-4">
+                            <span class="w-12 h-12 rounded-2xl bg-amber-500/20 flex items-center justify-center text-amber-400 text-lg shrink-0">
                                 <i class="fa-solid fa-phone"></i>
                             </span>
                             <div>
@@ -628,8 +622,8 @@ function buildFallbackHtml(params: WebGenerationParams): string {
                                 <div class="font-bold text-lg text-white">${params.phone}</div>
                             </div>
                         </div>` : ''}
-                        <div class="flex items-center gap-4 text-slate-200">
-                            <span class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-lg shrink-0">
+                        <div class="flex items-center gap-4">
+                            <span class="w-12 h-12 rounded-2xl bg-amber-500/20 flex items-center justify-center text-amber-400 text-lg shrink-0">
                                 <i class="fa-solid fa-clock"></i>
                             </span>
                             <div>
@@ -639,21 +633,21 @@ function buildFallbackHtml(params: WebGenerationParams): string {
                         </div>
                     </div>
                     <div class="mt-10 flex flex-wrap gap-4">
-                        ${params.phone ? `<a href="tel:${params.phone}" class="px-6 py-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-sm transition-all shadow-lg shadow-amber-500/20 flex items-center gap-2">
+                        ${params.phone ? `<a href="tel:${params.phone}" class="px-6 py-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-sm transition-all shadow-md flex items-center gap-2">
                             <i class="fa-solid fa-phone"></i> Hemen Ara
                         </a>` : ''}
-                        ${params.googleMapsUri ? `<a href="${params.googleMapsUri}" target="_blank" class="px-6 py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm transition-all border border-slate-700 flex items-center gap-2">
+                        <a href="${mapsTargetUrl}" target="_blank" class="px-6 py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm transition-all border border-slate-700 flex items-center gap-2">
                             <i class="fa-solid fa-map-location-dot text-amber-400"></i> Haritada Yol Tarifi Al
-                        </a>` : ''}
+                        </a>
                     </div>
                 </div>
-                <div class="h-96 rounded-2xl overflow-hidden relative border border-slate-800 group shadow-2xl">
-                    <img src="${heroImage}" alt="Mekan Görseli" class="w-full h-full object-cover filter brightness-75 group-hover:scale-105 transition-transform duration-700">
-                    <div class="absolute inset-0 bg-slate-950/50 flex items-center justify-center p-6 text-center backdrop-blur-[2px]">
-                        <div class="bg-slate-900/90 backdrop-blur-md border border-slate-800 p-8 rounded-2xl max-w-sm shadow-2xl">
-                            <i class="fa-solid fa-location-dot text-amber-400 text-4xl mb-4 animate-bounce"></i>
-                            <h4 class="font-extrabold text-white text-xl mb-2">${params.businessName}</h4>
-                            <p class="text-xs text-slate-300 leading-relaxed">${params.address}</p>
+                <div class="h-80 sm:h-96 rounded-2xl overflow-hidden relative border border-slate-800 shadow-xl">
+                    <img src="${heroImage}" alt="${params.businessName}" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-slate-950/40 flex items-center justify-center p-6 text-center">
+                        <div class="bg-slate-900/90 backdrop-blur-md p-6 rounded-2xl border border-slate-700 shadow-2xl">
+                            <i class="fa-solid fa-location-dot text-amber-400 text-3xl mb-2"></i>
+                            <h4 class="font-bold text-white text-lg">${params.businessName}</h4>
+                            <p class="text-xs text-slate-300 mt-1">${params.address}</p>
                         </div>
                     </div>
                 </div>
@@ -662,9 +656,9 @@ function buildFallbackHtml(params: WebGenerationParams): string {
     </section>
 
     <!-- Footer -->
-    <footer class="py-10 bg-slate-950 border-t border-slate-900 text-center text-xs text-slate-500 relative z-10">
+    <footer class="py-10 bg-slate-950 text-slate-400 text-center text-xs border-t border-slate-900">
         <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div class="font-semibold text-slate-400">${params.businessName}</div>
+            <div class="font-semibold text-white">${params.businessName}</div>
             <p>© 2026 Tüm hakları saklıdır.</p>
         </div>
     </footer>
@@ -674,33 +668,32 @@ function buildFallbackHtml(params: WebGenerationParams): string {
         <i class="fa-brands fa-whatsapp group-hover:rotate-12 transition-transform"></i>
     </a>` : ''}
 
-    <!-- Interactive Appointment Modal -->
-    <div id="appointment-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-8 max-w-md w-full relative shadow-2xl animate-float">
-            <button onclick="closeModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
+    <!-- Appointment Modal -->
+    <div id="appointment-modal" class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-md hidden items-center justify-center p-4">
+        <div class="bg-white border border-slate-200 rounded-3xl p-8 max-w-md w-full relative shadow-2xl">
+            <button onclick="closeModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 flex items-center justify-center">
                 <i class="fa-solid fa-xmark"></i>
             </button>
-            <h3 class="text-2xl font-extrabold text-white mb-2">Online Randevu Oluştur</h3>
-            <p class="text-xs text-slate-400 mb-6">Tarih ve hizmet seçerek anında randevunuzu tamamlayın.</p>
+            <h3 class="text-2xl font-extrabold text-slate-900 mb-2">Online Randevu Oluştur</h3>
+            <p class="text-xs text-slate-500 mb-6">Tarih ve hizmet seçerek anında randevunuzu tamamlayın.</p>
             <div class="space-y-4 text-xs">
                 <div>
-                    <label class="block font-semibold text-slate-300 mb-1">Seçilen Hizmet</label>
-                    <input type="text" id="modal-service" value="Özel Bakım Paketi" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white outline-none font-bold" readonly>
+                    <label class="block font-semibold text-slate-700 mb-1">Seçilen Hizmet</label>
+                    <input type="text" id="modal-service" value="Özel Bakım Paketi" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 outline-none font-bold" readonly>
                 </div>
                 <div>
-                    <label class="block font-semibold text-slate-300 mb-1">Tarih Seçin</label>
-                    <input type="date" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white outline-none">
+                    <label class="block font-semibold text-slate-700 mb-1">Tarih Seçin</label>
+                    <input type="date" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 outline-none">
                 </div>
-                ${rawPhone ? `<a id="whatsapp-confirm-link" href="https://wa.me/${rawPhone}?text=Merhaba,%20randevu%20almak%20istiyorum" target="_blank" class="w-full py-4 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 font-extrabold text-sm flex items-center justify-center gap-2 hover:brightness-110 transition-all shadow-lg shadow-amber-500/20">
+                ${rawPhone ? `<a id="whatsapp-confirm-link" href="https://wa.me/${rawPhone}?text=Merhaba,%20randevu%20almak%20istiyorum" target="_blank" class="w-full py-4 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-extrabold text-sm flex items-center justify-center gap-2 hover:brightness-105 transition-all shadow-md">
                     <i class="fa-brands fa-whatsapp text-lg"></i> Randevuyu WhatsApp İle Onayla
-                </a>` : `<button onclick="alert('Teşekkürler! Randevu talebiniz alınmıştır.')" class="w-full py-4 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 font-extrabold text-sm flex items-center justify-center gap-2">
+                </a>` : `<button onclick="alert('Teşekkürler! Randevu talebiniz alınmıştır.')" class="w-full py-4 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-extrabold text-sm flex items-center justify-center gap-2">
                     Randevuyu Tamamla
                 </button>`}
             </div>
         </div>
     </div>
 
-    <!-- JavaScript Interactions -->
     <script>
         function openModal() {
             document.getElementById('appointment-modal').classList.remove('hidden');
