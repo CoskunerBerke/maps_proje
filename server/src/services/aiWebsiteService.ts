@@ -101,14 +101,14 @@ Design Requirements:
     * Eğer size gönderilen geçerli Google Haritalar fotoğrafı sayısı (örn: ${params.downloadedPhotos.length} adet), sitede kullanmak istediğiniz görsel sayısından az ise, KESİNLİKLE mevcut olmayan "./photo-2.jpg", "./photo-3.jpg" gibi uydurma yolları src olarak kullanmayın!
     * Örneğin sadece 1 adet fotoğraf gönderilmişse, sadece 1 adet görsel için "./photo-1.jpg" yolunu kullanın. Sitedeki diğer tüm görseller (Hizmet kartları, Hakkımızda, Banner vb.) için aşağıdaki listeden işletmeye en uygun olan konseptin Unsplash linklerini birebir kullanın.
     * Kısacası: Sadece gerçekten mevcut olan './photo-1.jpg' ila './photo-N.jpg' arasındaki dosyaları kullanın; eksik kalan tüm görseller için aşağıdaki Unsplash linklerini doldurun. Sitede kesinlikle boş/kırık resim kutusu veya yüklenmeyen resim kalmamalıdır!
-    * Tüm <img> etiketlerine güvenlik amacıyla 'onerror="this.style.display=\'none\'"' veya 'onerror="this.src=\'[Unsplash yedek adresi]\'"' özelliğini mutlaka ekleyin.
+    * Tüm <img> etiketlerine KESİNLİKLE 'onerror="this.onerror=null; this.src=\'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?q=80&w=600&auto=format&fit=crop\';"' koruma özelliğini ekleyin. Resimlerin kırılması veya yüklenememesi durumunda KESİNLİKLE BOŞ BEYAZ KUTU KALMASI YASAKTIR!
   - Eğer gönderilen fotoğrafların tamamında insan var ise veya hiç fotoğraf gönderilmemişse, aşağıdaki konseptlerden işletmeye uygun olanı için gerçekçi, yüksek kaliteli Unsplash fotoğraf linklerini kullanın (URL'yi birebir yazın, hayali link uydurmayın):
     * Erkek Kuaförü / Berber / Barber Shop (KRİTİK: KESİNLİKLE kadın saç modeli, oje, makyaj, doktor/medikal/hemşire görselleri KULLANMAYIN!):
       - Banner (Ana Sayfa Görseli): https://images.unsplash.com/photo-1585747860715-2ba37e788b70?q=80&w=1200&auto=format&fit=crop
       - Saç Kesimi Görseli: https://images.unsplash.com/photo-1621605815971-fbc98d665033?q=80&w=600&auto=format&fit=crop
-      - Sakal Bakımı Görseli: https://images.unsplash.com/photo-1593702295094-aec22dfad693?q=80&w=600&auto=format&fit=crop
-      - Yıkama ve Cilt Bakımı Görseli: https://images.unsplash.com/photo-1605497746444-ac9dbd39f477?q=80&w=600&auto=format&fit=crop
-      - Hakkımızda Görseli: https://images.unsplash.com/photo-1503951914875-452162b0f3f1?q=80&w=800&auto=format&fit=crop
+      - Sakal Bakımı Görseli: https://images.unsplash.com/photo-1503951914875-452162b0f3f1?q=80&w=600&auto=format&fit=crop
+      - Yıkama ve Cilt Bakımı Görseli: https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?q=80&w=600&auto=format&fit=crop
+      - Hakkımızda Görseli: https://images.unsplash.com/photo-1585747860715-2ba37e788b70?q=80&w=800&auto=format&fit=crop
     * Bayan Kuaförü / Güzellik Salonu / Spa / Manikür (KRİTİK: Erkek berberi için bunu KULLANMAYIN!):
       - Banner: https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=1200&auto=format&fit=crop
       - Hizmetler: https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=600&auto=format&fit=crop, https://images.unsplash.com/photo-1604654894610-df63bc536371?q=80&w=600&auto=format&fit=crop, https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?q=80&w=600&auto=format&fit=crop
@@ -427,30 +427,45 @@ function buildFallbackHtml(params: WebGenerationParams): string {
   const ratingText = `★ ${ratingVal}`;
   const reviewsText = `(${reviewsVal} Değerlendirme)`;
 
-  // Curated HD category-matching service photos (Guaranteed 100% text-to-image match)
+  // 100% Verified HD Image Collections with automatic Google Maps photo preference
+  const gPhotos = params.downloadedPhotos || [];
+  const defaultFallback = 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?q=80&w=600&auto=format&fit=crop';
+
   let services = [
-    { title: 'VIP Bakım & Şekillendirme Paketleri', desc: 'Kişiye özel analizler, hijyenik ekipmanlar ve uzman dokunuşlarla üst düzey konforlu bakım.', img: fallbacks[1 % fallbacks.length], price: 'Özel Fiyat' },
-    { title: 'Profesyonel Stil & Şekillendirme', desc: 'Son trend stiller, detaylı tasarım ve özgün konseptlerle görünümünüzü yenileyin.', img: fallbacks[2 % fallbacks.length], price: 'Popüler' },
-    { title: 'Yüz & Cilt Ferahlatma Terapisi', desc: 'Organik ferahlatma kürleri, derinlemesine buhar bakımı ve yenileyici özel uygulamalar.', img: fallbacks[3 % fallbacks.length], price: 'Tavsiye Edilen' }
+    { title: 'VIP Bakım & Şekillendirme Paketleri', desc: 'Kişiye özel analizler, hijyenik ekipmanlar ve uzman dokunuşlarla üst düzey konforlu bakım.', img: gPhotos[1] ? `./photo-2.jpg` : fallbacks[1 % fallbacks.length], fallbackImg: fallbacks[1 % fallbacks.length] || defaultFallback, price: 'Özel Fiyat' },
+    { title: 'Profesyonel Stil & Şekillendirme', desc: 'Son trend stiller, detaylı tasarım ve özgün konseptlerle görünümünüzü yenileyin.', img: gPhotos[2] ? `./photo-3.jpg` : fallbacks[2 % fallbacks.length], fallbackImg: fallbacks[2 % fallbacks.length] || defaultFallback, price: 'Popüler' },
+    { title: 'Yüz & Cilt Ferahlatma Terapisi', desc: 'Organik ferahlatma kürleri, derinlemesine buhar bakımı ve yenileyici özel uygulamalar.', img: gPhotos[3] ? `./photo-4.jpg` : fallbacks[3 % fallbacks.length], fallbackImg: fallbacks[3 % fallbacks.length] || defaultFallback, price: 'Tavsiye Edilen' }
   ];
 
   if (categoryKey === 'beauty') {
+    const nailFallback = 'https://images.unsplash.com/photo-1604654894610-df63bc536371?q=80&w=600&auto=format&fit=crop';
+    const lashFallback = 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=600&auto=format&fit=crop';
+    const skinFallback = 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?q=80&w=600&auto=format&fit=crop';
+    const hairFallback = 'https://images.unsplash.com/photo-1562322140-8baeececf3df?q=80&w=600&auto=format&fit=crop';
+
     services = [
-      { title: 'Protez Tırnak & Estetik Nail Art', desc: 'Kalıcı oje, özel tasarım nail art, medikal manikür ve hijyenik tırnak bakımı.', img: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?q=80&w=600&auto=format&fit=crop', price: 'Trend' },
-      { title: 'İpek Kirpik & Keratin Kirpik Lifting', desc: 'Doğal hacimli ipek kirpik uygulamaları, keratin lifting ve kaş tasarımı.', img: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=600&auto=format&fit=crop', price: 'Çok Satan' },
-      { title: 'Derinlemesine Medikal Cilt Bakımı', desc: 'Gözenek sıkılaştırıcı, hyaluronik asit nem bombası ve ışıltı veren medikal cilt bakımı.', img: 'https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?q=80&w=600&auto=format&fit=crop', price: 'VIP' },
-      { title: 'Profesyonel Saç Tasarım & Kesim', desc: 'Son trend saç kesimleri, saç botoksu, renk tasarımı ve profesyonel fön.', img: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=600&auto=format&fit=crop', price: 'Özel Seri' }
+      { title: 'Protez Tırnak & Estetik Nail Art', desc: 'Kalıcı oje, özel tasarım nail art, medikal manikür ve hijyenik tırnak bakımı.', img: gPhotos[1] ? `./photo-2.jpg` : nailFallback, fallbackImg: nailFallback, price: 'Trend' },
+      { title: 'İpek Kirpik & Keratin Kirpik Lifting', desc: 'Doğal hacimli ipek kirpik uygulamaları, keratin lifting ve kaş tasarımı.', img: gPhotos[2] ? `./photo-3.jpg` : lashFallback, fallbackImg: lashFallback, price: 'Çok Satan' },
+      { title: 'Derinlemesine Medikal Cilt Bakımı', desc: 'Gözenek sıkılaştırıcı, hyaluronik asit nem bombası ve ışıltı veren medikal cilt bakımı.', img: gPhotos[3] ? `./photo-4.jpg` : skinFallback, fallbackImg: skinFallback, price: 'VIP' },
+      { title: 'Profesyonel Saç Tasarım & Kesim', desc: 'Son trend saç kesimleri, saç botoksu, renk tasarımı ve profesyonel fön.', img: gPhotos[4] ? `./photo-5.jpg` : hairFallback, fallbackImg: hairFallback, price: 'Özel Seri' }
     ];
   } else if (categoryKey === 'barber') {
+    const haircutFallback = 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?q=80&w=600&auto=format&fit=crop';
+    const beardFallback = 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?q=80&w=600&auto=format&fit=crop';
+    const skinFallback = 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?q=80&w=600&auto=format&fit=crop';
+
     services = [
-      { title: 'Klasik & Modern Saç Kesimi', desc: 'Yüz tipinize özel profesyonel saç kesimi, yıkama ve fön şekillendirme.', img: 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?q=80&w=600&auto=format&fit=crop', price: 'VIP Kesim' },
-      { title: 'Sakallı Stil & Buharlı Sakal Bakımı', desc: 'Sıcak havlu kompresli hassas sakal tıraşı, sakal şekillendirme ve bakım yağları.', img: 'https://images.unsplash.com/photo-1593702295094-aec22dfad693?q=80&w=600&auto=format&fit=crop', price: 'Özel Bakım' },
-      { title: 'Siyah Nokta & Buharlı Cilt Terapisi', desc: 'Gözenek temizleme, siyah nokta maskesi ve ferahlatıcı cilt bakımı.', img: 'https://images.unsplash.com/photo-1605497746444-ac9dbd39f477?q=80&w=600&auto=format&fit=crop', price: 'Ferahlatıcı' }
+      { title: 'Klasik & Modern Saç Kesimi', desc: 'Yüz tipinize özel profesyonel saç kesimi, yıkama ve fön şekillendirme.', img: gPhotos[1] ? `./photo-2.jpg` : haircutFallback, fallbackImg: haircutFallback, price: 'VIP Kesim' },
+      { title: 'Sakallı Stil & Buharlı Sakal Bakımı', desc: 'Sıcak havlu kompresli hassas sakal tıraşı, sakal şekillendirme ve bakım yağları.', img: gPhotos[2] ? `./photo-3.jpg` : beardFallback, fallbackImg: beardFallback, price: 'Özel Bakım' },
+      { title: 'Siyah Nokta & Buharlı Cilt Terapisi', desc: 'Gözenek temizleme, siyah nokta maskesi ve ferahlatıcı cilt bakımı.', img: gPhotos[3] ? `./photo-4.jpg` : skinFallback, fallbackImg: skinFallback, price: 'Ferahlatıcı' }
     ];
   } else if (categoryKey === 'food' || categoryKey === 'cafe') {
+    const foodFallback = 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=600&auto=format&fit=crop';
+    const coffeeFallback = 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=600&auto=format&fit=crop';
+
     services = [
-      { title: 'Gurme Özel Menü & İmzalı Lezzetler', desc: 'Taze tarladan masaya konseptimizle hazırlanan eşsiz lezzetler ve lezzet şöleni.', img: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=600&auto=format&fit=crop', price: 'Özel Menü' },
-      { title: 'Special Kahve & İçecek Çeşitleri', desc: 'Özel kavrum çekirdeklerden barista imzalı sıcak ve soğuk kahve seçenekleri.', img: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=600&auto=format&fit=crop', price: 'En Sevilen' }
+      { title: 'Gurme Özel Menü & İmzalı Lezzetler', desc: 'Taze tarladan masaya konseptimizle hazırlanan eşsiz lezzetler ve lezzet şöleni.', img: gPhotos[1] ? `./photo-2.jpg` : foodFallback, fallbackImg: foodFallback, price: 'Özel Menü' },
+      { title: 'Special Kahve & İçecek Çeşitleri', desc: 'Özel kavrum çekirdeklerden barista imzalı sıcak ve soğuk kahve seçenekleri.', img: gPhotos[2] ? `./photo-3.jpg` : coffeeFallback, fallbackImg: coffeeFallback, price: 'En Sevilen' }
     ];
   }
 
@@ -568,7 +583,7 @@ function buildFallbackHtml(params: WebGenerationParams): string {
                 ${services.map((s) => `
                 <div class="bg-white border border-slate-200/90 rounded-3xl overflow-hidden hover:-translate-y-2 hover:shadow-2xl hover:shadow-slate-300/60 transition-all duration-300 group flex flex-col">
                     <div class="h-60 overflow-hidden relative">
-                        <img src="${s.img}" alt="${s.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                        <img src="${s.img}" alt="${s.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.onerror=null; this.src='${s.fallbackImg}';">
                         <span class="absolute top-4 right-4 px-3.5 py-1.5 rounded-full bg-slate-900/90 text-amber-400 font-bold text-xs shadow-md">
                             ${s.price}
                         </span>
