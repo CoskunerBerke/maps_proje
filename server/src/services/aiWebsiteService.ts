@@ -600,9 +600,7 @@ function buildFallbackHtml(params: WebGenerationParams): string {
     <header class="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-sm transition-all">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
             <a href="#" class="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3 group">
-                <span class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-400 flex items-center justify-center text-slate-950 text-lg font-black shadow-md group-hover:scale-105 transition-transform">
-                    ${params.businessName.substring(0, 1).toUpperCase()}
-                </span>
+                ${(params.downloadedPhotos && params.downloadedPhotos.length > 0) ? `<img src="./photo-1.jpg" alt="${params.businessName} Logo" class="w-10 h-10 rounded-xl object-cover shadow-md group-hover:scale-105 transition-transform" onerror="this.onerror=null;this.style.display='none';this.nextElementSibling.style.display='flex';"><span style="display:none" class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-400 items-center justify-center text-slate-950 text-lg font-black shadow-md">${params.businessName.substring(0, 1).toUpperCase()}</span>` : `<span class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-400 flex items-center justify-center text-slate-950 text-lg font-black shadow-md group-hover:scale-105 transition-transform">${params.businessName.substring(0, 1).toUpperCase()}</span>`}
                 <span class="text-slate-900 font-extrabold">${params.businessName}</span>
             </a>
             <nav class="hidden md:flex items-center gap-8">
@@ -681,10 +679,10 @@ function buildFallbackHtml(params: WebGenerationParams): string {
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center max-w-3xl mx-auto mb-16">
                 <span class="px-3.5 py-1.5 rounded-full bg-amber-500/10 text-amber-700 font-bold text-xs mb-3 inline-block">
-                    HİZMETLERİMİZ
+                    ${categoryKey === 'restaurant' || categoryKey === 'cafe' ? 'MENÜMÜZ & LEZZETLER' : categoryKey === 'barber' ? 'ERKEK BAKIM HİZMETLERİ' : categoryKey === 'beauty' ? 'GÜZELLİK HİZMETLERİ' : categoryKey === 'auto' ? 'SERVİS HİZMETLERİ' : 'HİZMETLERİMİZ'}
                 </span>
-                <h2 class="text-3xl sm:text-5xl font-extrabold text-slate-900 mb-4">Özel Bakım & Konsept Seçenekler</h2>
-                <p class="text-slate-600 text-base sm:text-lg">İhtiyacınıza uygun profesyonel çözümlerimiz</p>
+                <h2 class="text-3xl sm:text-5xl font-extrabold text-slate-900 mb-4">${term.sectionTitle}</h2>
+                <p class="text-slate-600 text-base sm:text-lg">${term.sectionSubtitle}</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-${services.length} gap-8">
@@ -700,7 +698,7 @@ function buildFallbackHtml(params: WebGenerationParams): string {
                         <h3 class="text-lg sm:text-xl font-bold text-slate-900 mb-2 group-hover:text-amber-600 transition-colors">${s.title}</h3>
                         <p class="text-slate-600 text-xs sm:text-sm mb-6 font-normal leading-relaxed flex-grow">${s.desc}</p>
                         <button onclick="selectService('${s.title}')" class="w-full py-3.5 rounded-xl bg-slate-900 hover:bg-amber-500 hover:text-slate-950 text-white font-bold text-xs transition-all text-center">
-                            Randevu Oluştur
+                            ${term.cardButtonText}
                         </button>
                     </div>
                 </div>
