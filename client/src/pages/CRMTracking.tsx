@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { translateCategory } from './Dashboard';
+import { safeExternalUrl } from '../utils/safeUrl';
 import { 
   Phone, PhoneCall, PlusCircle, Loader2, RefreshCw, 
   MessageSquare, Building, Globe, ExternalLink 
@@ -292,7 +293,7 @@ export default function CRMTracking({ showToast }: CRMTrackingProps) {
                             )}
                             {b.demoWebsiteUrl && (
                               <a
-                                href={b.demoWebsiteUrl}
+                                href={safeExternalUrl(b.demoWebsiteUrl)}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="text-[11px] text-cyan-400 hover:underline flex items-center gap-1 mt-1 font-semibold"

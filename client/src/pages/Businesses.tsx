@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { translateCategory } from './Dashboard';
+import { safeExternalUrl } from '../utils/safeUrl';
 import { 
   FileSpreadsheet, FileText, Phone, Star, MessageCircle, 
   ExternalLink, Eye, PhoneCall, Trash2, Edit3, Search, Filter, 
@@ -659,7 +660,7 @@ export default function Businesses({ showToast, userLocation }: BusinessesProps)
 
                           {b.googleMapsUri && (
                             <a
-                              href={b.googleMapsUri}
+                              href={safeExternalUrl(b.googleMapsUri)}
                               target="_blank"
                               rel="noreferrer"
                               className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 hover:text-white text-slate-300 transition-colors cursor-pointer"
@@ -747,7 +748,7 @@ export default function Businesses({ showToast, userLocation }: BusinessesProps)
                   <span className="text-slate-500 font-medium">Web Sitesi</span>
                   {selectedBusiness.websiteUri ? (
                     <a
-                      href={selectedBusiness.websiteUri}
+                      href={safeExternalUrl(selectedBusiness.websiteUri)}
                       target="_blank"
                       rel="noreferrer"
                       className="text-cyan-400 hover:underline flex items-center gap-1 font-semibold"
@@ -773,7 +774,7 @@ export default function Businesses({ showToast, userLocation }: BusinessesProps)
                   <span className="text-slate-500 font-medium">Üretilen Yapay Zeka Sitesi</span>
                   {selectedBusiness.demoWebsiteUrl ? (
                     <a
-                      href={selectedBusiness.demoWebsiteUrl}
+                      href={safeExternalUrl(selectedBusiness.demoWebsiteUrl)}
                       target="_blank"
                       rel="noreferrer"
                       className="text-cyan-400 hover:underline flex items-center gap-1 font-semibold"

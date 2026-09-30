@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { safeExternalUrl } from '../utils/safeUrl';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import { translateCategory } from './Dashboard';
@@ -175,7 +176,7 @@ export default function MapView({ showToast, userLocation }: MapViewProps) {
                     <div className="flex gap-2 pt-1">
                       {b.googleMapsUri && (
                         <a
-                          href={b.googleMapsUri}
+                          href={safeExternalUrl(b.googleMapsUri)}
                           target="_blank"
                           rel="noreferrer"
                           className="flex-1 flex items-center justify-center gap-1 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[10px] font-semibold transition-colors"
