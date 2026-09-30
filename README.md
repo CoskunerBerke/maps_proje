@@ -1,7 +1,8 @@
 # Eksik Web — Local Business Website Finder
 
-**A lead-generation and CRM tool that scans nearby businesses on Google Maps and finds the ones without a website.**
+**A local lead-finder and CRM that scans Google Maps around a location and lists the businesses that have no website (or only a social media page), so a web designer knows whom to call.**
 
+[![CI](https://github.com/CoskunerBerke/maps_proje/actions/workflows/ci.yml/badge.svg)](https://github.com/CoskunerBerke/maps_proje/actions/workflows/ci.yml)
 ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white)
@@ -13,7 +14,10 @@
 ![SQLite](https://img.shields.io/badge/SQLite-003B57?logo=sqlite&logoColor=white)
 ![Vitest](https://img.shields.io/badge/Vitest-1-6E9F18?logo=vitest&logoColor=white)
 
-> **Status:** personal tool, built to run locally (a Windows launcher script is included). Work in progress.
+![Eksik Web dashboard with lead statistics](docs/screenshots/dashboard.png)
+<sub>All screenshots show fictional demo data created by `npm run prisma:seed-demo` (businesses named "Örnek …", invalid 0312 000 00 xx phone numbers).</sub>
+
+> **Status:** personal tool that runs on your own computer (a Windows launcher is included). The scan / list / CRM / export flow works; the demo site generator is experimental. It has no login system and must not be exposed to a network — see [Security](#security).
 
 ## Overview
 
@@ -23,50 +27,101 @@ Eksik Web ("missing web") scans the area around a chosen location through the **
 - **social media only** (Instagram, Facebook, TikTok, X, YouTube, LinkedIn)
 - **has a website**
 
-It is designed for freelancers and small agencies who sell web design / SEO services to local businesses: find the businesses that need a website, track calls and notes in a built-in CRM, and export the list.
+It is built for freelancers and small agencies who sell web design / SEO services to local businesses: find the businesses that need a website, track calls and notes in a built-in CRM, and export the list.
 
 ## Features
 
-- **Dashboard** — overall statistics for scans and businesses found
-- **New scan** — pick a location (or use your current location), radius and categories, then run a Places Nearby Search
-- **Results list** — filter by website status and CRM status, sort by distance, rating or review count; export to **CSV** or **Excel (.xlsx)**
-- **Map view** — results plotted on an interactive Leaflet map
-- **CRM tracking** — call status and notes per business
-- **Excluded brands** — skip chain brands so only independent businesses are listed
-- **Demo mode** — works without an API key using seeded sample businesses (Ankara / Istanbul)
-- **Demo site generator (experimental)** — for a selected business, generates a one-page website with the Gemini API (using its Google photos and 4–5 star reviews) and deploys it to Vercel; the Gemini key and Vercel token are entered on the Settings page
-- Simple in-memory rate limiting and request validation with Zod
+- **Dashboard** — totals for scanned businesses, businesses without a website, called / interested / converted leads and a category breakdown
+- **New scan** — pick a location (browser location, coordinates or a map click), a radius and up to 18 categories, then run a Places Nearby Search (one request per category)
+- **Results list** — filter by website status, CRM status and phone, search by name or address, sort by distance, rating or review count; export to **CSV** (UTF-8 BOM) or **Excel (.xlsx)**
+- **Map view** — potential clients on an interactive Leaflet map
+- **CRM tracking** — 11 call statuses, a note history per business and ready-made e-mail / WhatsApp offer templates once a demo site exists
+- **Excluded brands** — chain brands (whole-word match) can be hidden so only independent businesses are listed
+- **Demo mode** — works without an API key using built-in sample places (Ankara / Istanbul)
+- **Cost limits** — the daily search limit and the max categories per search from the Settings page are enforced for real Google searches
+- **Demo site generator (experimental)** — for a selected business, builds a one-page website with the Gemini API (using its Google photos and 4–5 star reviews; a local template is used when Gemini is unavailable), deploys it to Vercel, looks up a public e-mail address and appends the lead to `potansiyel-musteriler.txt` on the Desktop. The Gemini key(s) and the Vercel token are entered on the Settings page.
+
+## Screenshots
+
+| Results list | Lead detail and CRM update |
+| --- | --- |
+| ![Results list with website status and CRM columns](docs/screenshots/businesses.png) | ![Lead detail modal with note history and call status](docs/screenshots/lead-detail.png) |
+| **Call tracking (CRM)** | **New scan** |
+| ![CRM page grouped by call status](docs/screenshots/crm.png) | ![New scan form with location, filters and categories](docs/screenshots/new-scan.png) |
+
+<img src="docs/screenshots/mobile-dashboard.png" alt="Dashboard on a 390 px wide phone screen" width="260">
+
+<sub>Fictional demo data. The map view is not pictured.</sub>
+
+## Architecture
+
+```mermaid
+flowchart LR
+    subgraph Browser["Browser - localhost:5173"]
+        UI["React + Vite UI<br/>Dashboard, Scan, Results, Map, CRM, Settings"]
+    end
+    subgraph API["Express API - 127.0.0.1:3001"]
+        Guard["Local-only guard<br/>Host and Origin check, rate limit"]
+        Routes["REST routes<br/>places, businesses, sessions,<br/>settings, statistics, excluded-brands"]
+        Places["PlacesService<br/>website classifier, chain filter"]
+        Site["AIWebsiteService<br/>HTML generation and deploy"]
+    end
+    DB[("SQLite via Prisma")]
+    GP["Google Places API (New)"]
+    Demo["Demo places (no API key)"]
+    Gemini["Gemini API"]
+    Vercel["Vercel API"]
+
+    UI -- "/api via Vite proxy" --> Guard --> Routes
+    Routes --> Places
+    Places --> GP
+    Places --> Demo
+    Places --> DB
+    Routes --> DB
+    Routes --> Site
+    Site --> Gemini
+    Site --> Vercel
+    Routes -- "CSV / XLSX export" --> UI
+```
+
+A scan request creates a `SearchSession`, calls the Places API once per category (max 5 in parallel, 10 s timeout), classifies each place's `websiteUri`, applies the filters (open now, phone, rating, review count, chains) and upserts the businesses by Place ID, so call statuses and notes survive later scans. The Google API key stays in `server/.env` and is only used by the server.
 
 ## Tech stack
 
 | Layer | Technology |
 | --- | --- |
 | Client | React 18, TypeScript, Vite, Tailwind CSS, React Leaflet, lucide-react |
-| Server | Node.js, Express, TypeScript, Zod, xlsx |
+| Server | Node.js, Express, TypeScript, Zod, SheetJS (xlsx) |
 | Database | Prisma ORM + SQLite |
 | External APIs | Google Places API (New), Gemini API, Vercel API |
-| Tests | Vitest |
+| Tests / CI | Vitest, GitHub Actions |
 
 ## Project structure
 
 ```
 maps_proje/
-├── client/                 # React + Vite front end
-│   └── src/pages/          # Dashboard, NewScan, Businesses, MapView, CRMTracking, Settings
-├── server/                 # Express + Prisma back end
-│   ├── prisma/             # schema.prisma, migrations, seed.ts
+├── .github/workflows/ci.yml   # CI: typecheck, tests, build, migrations + seeds
+├── client/                    # React + Vite front end
 │   └── src/
-│       ├── routes/         # places, businesses, sessions, settings, statistics, excluded-brands
-│       ├── services/       # placesService, aiWebsiteService
-│       ├── utils/          # website classifier, distance, email finder
-│       └── tests/          # Vitest tests
-├── baslat.bat              # Windows one-click launcher
-└── package.json            # root scripts (runs client + server together)
+│       ├── pages/             # Dashboard, NewScan, Businesses, MapView, CRMTracking, Settings
+│       └── utils/             # safe external links
+├── server/                    # Express + Prisma back end
+│   ├── prisma/                # schema.prisma, migrations, seed.ts, seed-demo.ts
+│   └── src/
+│       ├── data/              # sample places for demo mode
+│       ├── routes/            # places, businesses, sessions, settings, statistics, excluded-brands
+│       ├── schemas/           # Zod request validation
+│       ├── services/          # placesService, aiWebsiteService
+│       ├── utils/             # classifier, list filters, brand matcher, CSV/HTML escaping, local-only guard, ...
+│       └── tests/             # Vitest tests
+├── docs/screenshots/          # README screenshots (fictional demo data)
+├── baslat.bat                 # Windows one-click launcher
+└── package.json               # root scripts (runs client + server together)
 ```
 
 ## Getting started
 
-Requirements: **Node.js 20+**.
+Requirements: **Node.js 20+** (CI uses Node 22).
 
 ```bash
 # 1. Install root, client and server dependencies
@@ -79,20 +134,31 @@ cp server/.env.example server/.env        # PowerShell: Copy-Item server/.env.ex
 npm run prisma:generate --prefix server
 npm run prisma:migrate --prefix server
 npm run prisma:seed --prefix server
+npm run prisma:seed-demo --prefix server  # optional: 12 fictional leads to explore the UI
 
-# 4. Start client (http://localhost:5173) and server (port 3001)
+# 4. Start client (http://localhost:5173) and server (http://127.0.0.1:3001)
 npm run dev
 ```
 
-Other scripts: `npm run build`, `npm start`, `npm test`.
+On Windows, `baslat.bat` opens the browser and runs `npm run dev`. Without `GOOGLE_MAPS_API_KEY` the app runs in demo mode.
+
+Other scripts: `npm run build` (server `tsc` + client `vite build`), `npm start` (built server + `vite preview`), `npm test`.
+
+## Configuration
 
 ### Environment variables (`server/.env`)
 
-| Name | Purpose |
-| --- | --- |
-| `GOOGLE_MAPS_API_KEY` | Google Places API (New) key. If empty, the app runs in demo mode. |
-| `PORT` | API server port (default `3001`) |
-| `DATABASE_URL` | SQLite connection string, e.g. `file:./dev.db` |
+| Name | Default | Purpose |
+| --- | --- | --- |
+| `GOOGLE_MAPS_API_KEY` | empty | Google Places API (New) key. Empty = demo mode. |
+| `PORT` | `3001` | API port (the Vite proxy in `client/vite.config.ts` points to 3001) |
+| `HOST` | `127.0.0.1` | Interface the API listens on. Keep the loopback address. |
+| `ALLOWED_HOSTS` | empty | Extra host names accepted in `Host` / `Origin` headers, comma separated |
+| `DATABASE_URL` | `file:./dev.db` | SQLite connection string |
+
+### Settings page
+
+Demo mode, the Gemini API key(s) (several keys separated by commas are tried in turn), the Vercel access token, the chain brand list and the limits. "Daily max searches" and "max categories per search" are enforced for real Google searches; "max businesses per search" is stored but not applied yet.
 
 ### Google Cloud setup (short)
 
@@ -101,53 +167,225 @@ Other scripts: `npm run build`, `npm start`, `npm test`.
 3. Create an API key and **restrict it to the Places API**.
 4. Set budget alerts and daily quotas to avoid unexpected costs.
 
-### Troubleshooting (Windows)
+## Testing
+
+```bash
+npm test          # runs the server test suite (Vitest)
+```
+
+41 tests in 8 files cover the website classifier, distance math, Places search filtering (with Prisma and the Places API mocked), list filters, chain-brand matching, search cost limits, API error responses, the local-only Host/Origin guard, HTML escaping in generated demo sites and CSV formula neutralization. No API key or network access is needed. The live Google, Gemini and Vercel integrations are not covered by automated tests.
+
+GitHub Actions (`.github/workflows/ci.yml`) runs on every push and pull request: server `tsc --noEmit`, tests and build, migrations and both seed scripts on a throwaway database, and the client production build.
+
+## Deployment
+
+Eksik Web is meant to run on your own computer:
+
+```bash
+npm run build
+npm start         # API on 127.0.0.1:3001, built client on http://localhost:5173
+```
+
+With `NODE_ENV=production` the API also serves `client/dist` itself on port 3001. Do **not** deploy it to a public server or forward the port on your router: there is no authentication and the API returns the stored Gemini key and Vercel token to the UI.
+
+## Security
+
+- The API listens on `127.0.0.1` only and rejects requests whose `Host` header is not a local name (DNS rebinding) or whose `Origin` belongs to another website (CSRF).
+- The Google API key is read from `server/.env` and never sent to the browser. The Gemini key(s) and the Vercel token are stored in plain text in the local SQLite database.
+- Business names, addresses and reviews come from third parties: generated demo sites escape them, external links in the UI only allow `http(s)` URLs, and CSV cells starting with `=`, `+`, `-` or `@` are neutralized.
+- Requests are validated with Zod; database errors are logged on the server and not sent to the client.
+- HTML written by the Gemini API is published as-is — review a generated site before sending it to a business.
+
+## Status and roadmap
+
+- **Working:** real and demo scans, website classification, results list with filters and sorting, CSV/XLSX export, map view, CRM statuses and notes, excluded brands, dashboard statistics.
+- **Experimental:** demo site generator (needs your own Gemini and Vercel accounts).
+- **Known gaps:** "max businesses per search" is not enforced; the client `npm run lint` script has no ESLint configuration yet; the map needs internet access to OpenStreetMap tiles.
+
+## Troubleshooting (Windows)
 
 - **Execution policy error:** `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
 - **Port 3001/5173 already in use:** stop the process that owns the port, then run `npm run dev` again.
 - **SQLite/Prisma lock:** delete `server/prisma/dev.db` and re-run the migrate and seed commands.
+- **403 "Bu sunucu yalnızca yerel erişim içindir":** open the app through `http://localhost:5173`; to use another host name, add it to `ALLOWED_HOSTS`.
 
 ---
 
 ## Türkçe
 
-**Eksik Web**, Google Haritalar üzerinden çevredeki işletmeleri tarayıp **web sitesi olmayan** veya **yalnızca sosyal medya hesabı olan** işletmeleri bulan bir potansiyel müşteri (lead) bulma ve CRM aracıdır.
+**Eksik Web**, seçilen konum çevresindeki işletmeleri Google Haritalar üzerinden tarayıp **web sitesi olmayan** veya **yalnızca sosyal medya hesabı olan** işletmeleri listeleyen yerel bir potansiyel müşteri (lead) bulma ve CRM aracıdır; böylece web tasarımcısı kimi araması gerektiğini bilir.
 
-> **Durum:** Yerelde çalışacak şekilde geliştirilmiş kişisel bir araç (Windows için başlatma dosyası mevcut). Geliştirme devam ediyor.
+<sub>Ekran görüntülerindeki tüm veriler `npm run prisma:seed-demo` ile oluşturulan kurgusal demo verileridir ("Örnek …" adlı işletmeler, geçersiz 0312 000 00 xx numaraları).</sub>
+
+> **Durum:** Kendi bilgisayarınızda çalışan kişisel bir araç (Windows için başlatma dosyası mevcut). Tarama / liste / CRM / dışa aktarma akışı çalışıyor; demo site oluşturucu deneysel. Giriş (login) sistemi yoktur ve ağa açılmamalıdır — bkz. [Güvenlik](#güvenlik).
 
 ### Ne işe yarar?
 
-Yerel işletmelere web tasarım ve SEO hizmeti satan serbest çalışanlar ve küçük ajanslar için tasarlandı. Seçilen konum çevresindeki işletmeler **Google Places API (New)** ile taranır ve her işletme "web sitesi yok", "sadece sosyal medya" veya "web sitesi var" olarak sınıflandırılır.
+Yerel işletmelere web tasarım ve SEO hizmeti satan serbest çalışanlar ve küçük ajanslar için tasarlandı. Seçilen konum çevresindeki işletmeler **Google Places API (New)** ile taranır ve her işletme "web sitesi yok", "sadece sosyal medya" (Instagram, Facebook, TikTok, X, YouTube, LinkedIn) veya "web sitesi var" olarak sınıflandırılır.
 
 ### Özellikler
 
-- **Genel Durum Paneli** — tarama ve işletme istatistikleri
-- **Yeni Bölge Tarama** — konum, yarıçap ve kategori seçerek tarama başlatma
-- **İşletmeler Sonuç Listesi** — web sitesi ve CRM durumuna göre filtreleme, mesafe/puan/yorum sayısına göre sıralama, **CSV** ve **Excel** dışa aktarma
-- **Harita Görünümü** — sonuçların Leaflet haritası üzerinde gösterimi
-- **Müşteri Takip Sistemi (CRM)** — arama durumu ve notlar
-- **Hariç tutulan markalar** — zincir markaları sonuçlardan çıkarma
-- **Demo Modu** — API anahtarı olmadan örnek verilerle test
-- **Demo site oluşturucu (deneysel)** — seçilen işletme için Gemini API ile tek sayfalık site üretip Vercel'e yükler; Gemini anahtarı ve Vercel token'ı Ayarlar sayfasından girilir
+- **Genel Durum Paneli** — taranan işletme, web sitesi olmayan, aranan / ilgilenen / müşteriye dönüşen sayıları ve kategori dağılımı
+- **Yeni Bölge Tarama** — konum (tarayıcı konumu, koordinat veya haritadan seçim), yarıçap ve en fazla 18 kategori seçerek Places Nearby Search (kategori başına bir istek)
+- **İşletmeler Sonuç Listesi** — web sitesi, CRM durumu ve telefona göre filtreleme, ad/adres araması, mesafe/puan/yorum sayısına göre sıralama; **CSV** (UTF-8 BOM) ve **Excel (.xlsx)** dışa aktarma
+- **Harita Görünümü** — potansiyel müşterilerin Leaflet haritası üzerinde gösterimi
+- **Müşteri Takip Sistemi (CRM)** — 11 arama durumu, işletme başına not geçmişi, demo site üretildikten sonra hazır e-posta / WhatsApp teklif şablonları
+- **Hariç tutulan markalar** — zincir markalar (tam kelime eşleşmesiyle) gizlenebilir
+- **Demo Modu** — API anahtarı olmadan yerleşik örnek mekânlarla (Ankara / İstanbul) çalışır
+- **Maliyet limitleri** — Ayarlar sayfasındaki günlük tarama limiti ve tarama başına kategori limiti gerçek Google taramalarında uygulanır
+- **Demo site oluşturucu (deneysel)** — seçilen işletme için Gemini API ile (Google fotoğrafları ve 4–5 yıldızlı yorumlarıyla; Gemini kullanılamazsa yerel şablonla) tek sayfalık site üretir, Vercel'e yükler, herkese açık bir e-posta adresi arar ve kaydı Masaüstündeki `potansiyel-musteriler.txt` dosyasına ekler. Gemini anahtar(lar)ı ve Vercel token'ı Ayarlar sayfasından girilir.
+
+### Ekran görüntüleri
+
+| Sonuç listesi | İşletme detayı ve CRM güncelleme |
+| --- | --- |
+| ![Web sitesi durumu ve CRM sütunlarıyla sonuç listesi](docs/screenshots/businesses.png) | ![Not geçmişi ve arama durumuyla işletme detayı](docs/screenshots/lead-detail.png) |
+| **Arama takibi (CRM)** | **Yeni tarama** |
+| ![Arama durumuna göre gruplanmış CRM sayfası](docs/screenshots/crm.png) | ![Konum, filtre ve kategori seçimiyle yeni tarama formu](docs/screenshots/new-scan.png) |
+
+<sub>Kurgusal demo verisi. Harita görünümü gösterilmemiştir.</sub>
+
+### Mimari
+
+```mermaid
+flowchart LR
+    subgraph Tarayici["Tarayıcı - localhost:5173"]
+        UI["React + Vite arayüzü<br/>Panel, Tarama, Sonuçlar, Harita, CRM, Ayarlar"]
+    end
+    subgraph API["Express API - 127.0.0.1:3001"]
+        Guard["Yerel erişim koruması<br/>Host ve Origin kontrolü, istek sınırı"]
+        Routes["REST uç noktaları<br/>places, businesses, sessions,<br/>settings, statistics, excluded-brands"]
+        Places["PlacesService<br/>web sitesi sınıflandırma, zincir filtresi"]
+        Site["AIWebsiteService<br/>HTML üretimi ve yayınlama"]
+    end
+    DB[("SQLite - Prisma")]
+    GP["Google Places API (New)"]
+    Demo["Demo mekânlar (API anahtarı yok)"]
+    Gemini["Gemini API"]
+    Vercel["Vercel API"]
+
+    UI -- "/api - Vite proxy" --> Guard --> Routes
+    Routes --> Places
+    Places --> GP
+    Places --> Demo
+    Places --> DB
+    Routes --> DB
+    Routes --> Site
+    Site --> Gemini
+    Site --> Vercel
+    Routes -- "CSV / XLSX dışa aktarma" --> UI
+```
+
+Bir tarama isteği bir `SearchSession` oluşturur, her kategori için Places API'yi bir kez çağırır (en fazla 5 paralel, 10 sn zaman aşımı), `websiteUri` alanını sınıflandırır, filtreleri (açık olanlar, telefon, puan, yorum sayısı, zincirler) uygular ve işletmeleri Place ID ile günceller; böylece arama durumları ve notlar sonraki taramalarda korunur. Google API anahtarı `server/.env` dosyasında kalır ve yalnızca sunucu tarafından kullanılır.
+
+### Teknolojiler
+
+| Katman | Teknoloji |
+| --- | --- |
+| İstemci | React 18, TypeScript, Vite, Tailwind CSS, React Leaflet, lucide-react |
+| Sunucu | Node.js, Express, TypeScript, Zod, SheetJS (xlsx) |
+| Veritabanı | Prisma ORM + SQLite |
+| Harici API'ler | Google Places API (New), Gemini API, Vercel API |
+| Test / CI | Vitest, GitHub Actions |
+
+### Proje yapısı
+
+```
+maps_proje/
+├── .github/workflows/ci.yml   # CI: tip kontrolü, testler, build, migration + seed
+├── client/                    # React + Vite arayüzü
+│   └── src/
+│       ├── pages/             # Dashboard, NewScan, Businesses, MapView, CRMTracking, Settings
+│       └── utils/             # güvenli dış bağlantılar
+├── server/                    # Express + Prisma sunucusu
+│   ├── prisma/                # schema.prisma, migration'lar, seed.ts, seed-demo.ts
+│   └── src/
+│       ├── data/              # demo modu örnek mekânları
+│       ├── routes/            # places, businesses, sessions, settings, statistics, excluded-brands
+│       ├── schemas/           # Zod istek doğrulama
+│       ├── services/          # placesService, aiWebsiteService
+│       ├── utils/             # sınıflandırıcı, liste filtreleri, marka eşleştirme, CSV/HTML kaçışı, yerel erişim koruması, ...
+│       └── tests/             # Vitest testleri
+├── docs/screenshots/          # README görüntüleri (kurgusal demo verisi)
+├── baslat.bat                 # Windows tek tıkla başlatıcı
+└── package.json               # kök komutlar (istemci + sunucuyu birlikte çalıştırır)
+```
 
 ### Kurulum
 
-Gereksinim: **Node.js 20+**
+Gereksinim: **Node.js 20+** (CI Node 22 kullanır).
 
 ```bash
 npm run install:all
-cp server/.env.example server/.env
+cp server/.env.example server/.env        # PowerShell: Copy-Item server/.env.example server/.env
 npm run prisma:generate --prefix server
 npm run prisma:migrate --prefix server
 npm run prisma:seed --prefix server
+npm run prisma:seed-demo --prefix server  # isteğe bağlı: arayüzü denemek için 12 kurgusal işletme
 npm run dev
 ```
 
-Uygulama `http://localhost:5173` adresinde açılır; API `3001` portunda çalışır. Windows'ta `baslat.bat` dosyası uygulamayı tek tıkla başlatır.
+Uygulama `http://localhost:5173` adresinde açılır; API `127.0.0.1:3001` adresinde çalışır. Windows'ta `baslat.bat` tarayıcıyı açıp `npm run dev` komutunu çalıştırır. `GOOGLE_MAPS_API_KEY` girilmezse uygulama demo modunda çalışır.
 
-**Ortam değişkenleri (`server/.env`):** `GOOGLE_MAPS_API_KEY`, `PORT`, `DATABASE_URL`. API anahtarı girilmezse uygulama demo modunda çalışır.
+Diğer komutlar: `npm run build` (sunucu `tsc` + istemci `vite build`), `npm start` (derlenmiş sunucu + `vite preview`), `npm test`.
+
+### Yapılandırma
+
+**Ortam değişkenleri (`server/.env`):**
+
+| Ad | Varsayılan | Açıklama |
+| --- | --- | --- |
+| `GOOGLE_MAPS_API_KEY` | boş | Google Places API (New) anahtarı. Boşsa demo modu. |
+| `PORT` | `3001` | API portu (`client/vite.config.ts` içindeki proxy 3001'e yönlenir) |
+| `HOST` | `127.0.0.1` | API'nin dinlediği arayüz. Loopback adresinde bırakın. |
+| `ALLOWED_HOSTS` | boş | `Host` / `Origin` başlıklarında kabul edilecek ek host adları (virgülle) |
+| `DATABASE_URL` | `file:./dev.db` | SQLite bağlantı adresi |
+
+**Ayarlar sayfası:** demo modu, Gemini API anahtar(lar)ı (virgülle ayrılan anahtarlar sırayla denenir), Vercel token'ı, zincir marka listesi ve limitler. "Günlük maksimum tarama" ve "tarama başına maksimum kategori" gerçek Google taramalarında uygulanır; "tarama başına maksimum işletme" kaydedilir ama henüz uygulanmaz.
 
 **Google Cloud:** Proje oluşturun, faturalandırma hesabı bağlayın, **Places API (New)**'yi etkinleştirin, API anahtarı oluşturup yalnızca Places API ile sınırlandırın ve bütçe uyarısı / günlük kota belirleyin.
+
+### Testler
+
+```bash
+npm test          # sunucu test paketini (Vitest) çalıştırır
+```
+
+8 dosyadaki 41 test; web sitesi sınıflandırıcıyı, mesafe hesabını, Places arama filtrelerini (Prisma ve Places API mock'lanmış), liste filtrelerini, zincir marka eşleştirmeyi, tarama limitlerini, API hata yanıtlarını, yerel erişim korumasını, üretilen sitelerdeki HTML kaçışını ve CSV formül korumasını kapsar. API anahtarı veya ağ erişimi gerekmez; canlı Google, Gemini ve Vercel entegrasyonları otomatik testlerle kapsanmaz.
+
+GitHub Actions (`.github/workflows/ci.yml`) her push ve pull request'te sunucu için `tsc --noEmit`, testler ve build, geçici bir veritabanında migration'lar ve iki seed betiği ile istemcinin production build'ini çalıştırır.
+
+### Dağıtım
+
+Eksik Web kendi bilgisayarınızda çalışmak üzere tasarlanmıştır:
+
+```bash
+npm run build
+npm start         # API 127.0.0.1:3001, derlenmiş arayüz http://localhost:5173
+```
+
+`NODE_ENV=production` ile API, `client/dist` klasörünü de 3001 portundan sunar. Uygulamayı herkese açık bir sunucuya **kurmayın** ve portu modeminizden dışarı açmayın: kimlik doğrulama yoktur ve API kayıtlı Gemini anahtarını ve Vercel token'ını arayüze döndürür.
+
+### Güvenlik
+
+- API yalnızca `127.0.0.1` adresini dinler; `Host` başlığı yerel olmayan (DNS rebinding) veya `Origin` başlığı başka bir siteye ait (CSRF) istekleri reddeder.
+- Google API anahtarı `server/.env` dosyasından okunur ve tarayıcıya gönderilmez. Gemini anahtar(lar)ı ve Vercel token'ı yerel SQLite veritabanında düz metin olarak saklanır.
+- İşletme adları, adresler ve yorumlar üçüncü taraflardan gelir: üretilen demo sitelerde kaçışlanır, arayüzdeki dış bağlantılarda yalnızca `http(s)` adreslerine izin verilir ve `=`, `+`, `-` veya `@` ile başlayan CSV hücreleri etkisiz hale getirilir.
+- İstekler Zod ile doğrulanır; veritabanı hataları sunucuda loglanır, istemciye gönderilmez.
+- Gemini API'nin yazdığı HTML olduğu gibi yayınlanır — üretilen siteyi işletmeye göndermeden önce kontrol edin.
+
+### Durum ve yol haritası
+
+- **Çalışan:** gerçek ve demo tarama, web sitesi sınıflandırma, filtreli ve sıralı sonuç listesi, CSV/XLSX dışa aktarma, harita, CRM durumları ve notlar, hariç tutulan markalar, panel istatistikleri.
+- **Deneysel:** demo site oluşturucu (kendi Gemini ve Vercel hesaplarınızı gerektirir).
+- **Bilinen eksikler:** "tarama başına maksimum işletme" uygulanmıyor; istemcideki `npm run lint` için henüz ESLint yapılandırması yok; harita OpenStreetMap karolarına internet erişimi gerektirir.
+
+### Sorun giderme (Windows)
+
+- **Execution policy hatası:** `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
+- **3001/5173 portu kullanımda:** portu kullanan işlemi durdurup `npm run dev` komutunu tekrar çalıştırın.
+- **SQLite/Prisma kilidi:** `server/prisma/dev.db` dosyasını silip migrate ve seed komutlarını tekrar çalıştırın.
+- **403 "Bu sunucu yalnızca yerel erişim içindir":** uygulamayı `http://localhost:5173` üzerinden açın; başka bir host adı için `ALLOWED_HOSTS` değişkenine ekleyin.
 
 ---
 
