@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { prisma } from '../db';
 import { BusinessUpdateSchema } from '../schemas/validation';
 import { calculateDistance } from '../utils/distance';
+import { toCsvRow } from '../utils/csv';
 import * as XLSX from 'xlsx';
 import { findEmail } from '../utils/emailFinder';
 import { logToDesktop } from '../utils/desktopLogger';
@@ -301,10 +302,11 @@ router.post('/export/csv', async (req: Request, res: Response) => {
     });
 
     // Build CSV String with UTF-8 BOM (\ufeff) to prevent Turkish character issues in Excel
+    // Cells are quoted and formula-like values (=, +, -, @) are neutralized (CSV injection)
     let csvContent = '\ufeff';
-    csvContent += headers.map(h => `"${h.replace(/"/g, '""')}"`).join(',') + '\n';
+    csvContent += toCsvRow(headers) + '\n';
     rows.forEach((row) => {
-      csvContent += row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',') + '\n';
+      csvContent += toCsvRow(row) + '\n';
     });
 
     const filename = `websitesiz-isletmeler-${getFormattedDate()}.csv`;
