@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../db';
+import { sendRouteError } from '../utils/httpErrors';
 
 const router = Router();
 
@@ -11,7 +12,7 @@ router.get('/', async (req: Request, res: Response) => {
     });
     res.json(sessions);
   } catch (error: any) {
-    res.status(500).json({ error: 'Tarama geçmişi getirilirken hata oluştu: ' + error.message });
+    sendRouteError(res, error, 'Tarama geçmişi getirilirken hata oluştu');
   }
 });
 
@@ -32,7 +33,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 
     res.json(session);
   } catch (error: any) {
-    res.status(500).json({ error: 'Tarama oturumu getirilirken hata oluştu: ' + error.message });
+    sendRouteError(res, error, 'Tarama oturumu getirilirken hata oluştu');
   }
 });
 
@@ -45,7 +46,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
     });
     res.json({ message: 'Tarama oturumu silindi.' });
   } catch (error: any) {
-    res.status(500).json({ error: 'Tarama oturumu silinirken hata oluştu: ' + error.message });
+    sendRouteError(res, error, 'Tarama oturumu silinirken hata oluştu');
   }
 });
 

@@ -1,9 +1,10 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../db';
-import { BusinessUpdateSchema } from '../schemas/validation';
+import { BusinessUpdateSchema, ExportRequestSchema } from '../schemas/validation';
 import { calculateDistance } from '../utils/distance';
 import { buildBusinessWhere, parseCoordinate } from '../utils/businessFilters';
 import { toCsvRow } from '../utils/csv';
+import { sendRouteError } from '../utils/httpErrors';
 import * as XLSX from 'xlsx';
 import { findEmail } from '../utils/emailFinder';
 import { logToDesktop } from '../utils/desktopLogger';
@@ -88,7 +89,7 @@ router.get('/', async (req: Request, res: Response) => {
 
     res.json(results);
   } catch (error: any) {
-    res.status(500).json({ error: 'İşletmeler getirilirken hata oluştu: ' + error.message });
+    sendRouteError(res, error, 'İşletmeler getirilirken hata oluştu');
   }
 });
 
@@ -114,7 +115,7 @@ router.get('/:id', async (req: Request, res: Response) => {
       types: JSON.parse(business.types),
     });
   } catch (error: any) {
-    res.status(500).json({ error: 'İşletme detayı getirilirken hata oluştu: ' + error.message });
+    sendRouteError(res, error, 'İşletme detayı getirilirken hata oluştu');
   }
 });
 
@@ -129,14 +130,11 @@ router.patch('/:id', async (req: Request, res: Response) => {
       updateData.callingStatus = validated.callingStatus;
     }
 
-    // Create note if provided
+    // Create note if provided (nested write: status and note are saved together)
     if (validated.note && validated.note.trim() !== '') {
-      await prisma.businessNote.create({
-        data: {
-          businessId: id,
-          content: validated.note.trim(),
-        },
-      });
+      updateData.notes = {
+        create: { content: validated.note.trim() },
+      };
     }
 
     const business = await prisma.business.update({
@@ -154,11 +152,7 @@ router.patch('/:id', async (req: Request, res: Response) => {
       types: JSON.parse(business.types),
     });
   } catch (error: any) {
-    if (error.name === 'ZodError') {
-      res.status(400).json({ error: 'Geçersiz parametreler', details: error.errors });
-    } else {
-      res.status(500).json({ error: 'İşletme güncellenirken hata oluştu: ' + error.message });
-    }
+    sendRouteError(res, error, 'İşletme güncellenirken hata oluştu');
   }
 });
 
@@ -171,7 +165,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
     });
     res.json({ message: 'İşletme listeden başarıyla çıkarıldı.' });
   } catch (error: any) {
-    res.status(500).json({ error: 'İşletme silinirken hata oluştu: ' + error.message });
+    sendRouteError(res, error, 'İşletme silinirken hata oluştu');
   }
 });
 
@@ -189,8 +183,8 @@ function getFormattedDate(): string {
 // POST /api/businesses/export/csv
 router.post('/export/csv', async (req: Request, res: Response) => {
   try {
-    const { businessIds } = req.body;
-    
+    const { businessIds } = ExportRequestSchema.parse(req.body ?? {});
+
     const businesses = await prisma.business.findMany({
       where: businessIds ? { id: { in: businessIds } } : {},
       include: {
@@ -254,14 +248,14 @@ router.post('/export/csv', async (req: Request, res: Response) => {
     res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
     res.status(200).send(csvContent);
   } catch (error: any) {
-    res.status(500).json({ error: 'CSV dışa aktarılırken hata oluştu: ' + error.message });
+    sendRouteError(res, error, 'CSV dışa aktarılırken hata oluştu');
   }
 });
 
 // POST /api/businesses/export/xlsx
 router.post('/export/xlsx', async (req: Request, res: Response) => {
   try {
-    const { businessIds, lat, lng } = req.body;
+    const { businessIds, lat, lng } = ExportRequestSchema.parse(req.body ?? {});
     const userLat = parseCoordinate(lat);
     const userLng = parseCoordinate(lng);
 
@@ -348,7 +342,7 @@ router.post('/export/xlsx', async (req: Request, res: Response) => {
     res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
     res.status(200).send(buffer);
   } catch (error: any) {
-    res.status(500).json({ error: 'Excel dışa aktarılırken hata oluştu: ' + error.message });
+    sendRouteError(res, error, 'Excel dışa aktarılırken hata oluştu');
   }
 });
 
@@ -402,7 +396,7 @@ router.post('/:id/generate-site', async (req: Request, res: Response) => {
     // Dynamic fallback: if no photos exist in DB, fetch them dynamically
     if ((!photosArray || photosArray.length === 0) && apiKey) {
       try {
-        const detailsUrl = `https://places.googleapis.com/v1/places/${business.id}?fields=photos&key=${apiKey}`;
+        const detailsUrl = `https://places.googleapis.com/v1/places/${encodeURIComponent(business.id)}?fields=photos&key=${apiKey}`;
         const res = await fetch(detailsUrl);
         if (res.ok) {
           const data: any = await res.json();
@@ -446,7 +440,7 @@ router.post('/:id/generate-site', async (req: Request, res: Response) => {
     let googleReviews: { authorName: string; rating: number; text: string; relativeTime?: string }[] = [];
     if (apiKey) {
       try {
-        const reviewsUrl = `https://places.googleapis.com/v1/places/${business.id}?fields=reviews&languageCode=tr&key=${apiKey}`;
+        const reviewsUrl = `https://places.googleapis.com/v1/places/${encodeURIComponent(business.id)}?fields=reviews&languageCode=tr&key=${apiKey}`;
         const reviewsRes = await fetch(reviewsUrl);
         if (reviewsRes.ok) {
           const reviewsData: any = await reviewsRes.json();
@@ -520,8 +514,7 @@ router.post('/:id/generate-site', async (req: Request, res: Response) => {
       types: JSON.parse(updatedBusiness.types)
     });
   } catch (error: any) {
-    console.error('Website generation automation failed:', error);
-    res.status(500).json({ error: 'Otomasyon sırasında hata oluştu: ' + error.message });
+    sendRouteError(res, error, 'Otomasyon sırasında hata oluştu');
   }
 });
 

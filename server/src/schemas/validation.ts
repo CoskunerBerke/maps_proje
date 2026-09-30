@@ -27,18 +27,24 @@ export const BusinessUpdateSchema = z.object({
     'Yanlış telefon',
     'Müşteriye dönüştü',
   ]).optional(),
-  note: z.string().optional(),
+  note: z.string().max(5000).optional(),
 });
 
 export const SettingsUpdateSchema = z.object({
-  dailyMaxSearches: z.number().min(1).max(1000).optional(),
-  maxCategoriesPerSearch: z.number().min(1).max(50).optional(),
-  maxBusinessesPerSearch: z.number().min(1).max(1000).optional(),
+  dailyMaxSearches: z.number().int().min(1).max(1000).optional(),
+  maxCategoriesPerSearch: z.number().int().min(1).max(50).optional(),
+  maxBusinessesPerSearch: z.number().int().min(1).max(1000).optional(),
   isDemoMode: z.boolean().optional(),
   geminiApiKey: z.string().nullable().optional(),
   vercelToken: z.string().nullable().optional(),
 });
 
 export const ExcludedBrandSchema = z.object({
-  name: z.string().min(1),
+  name: z.string().trim().min(1).max(100),
+});
+
+export const ExportRequestSchema = z.object({
+  businessIds: z.array(z.string()).max(10000).optional(),
+  lat: z.union([z.number(), z.string()]).optional(),
+  lng: z.union([z.number(), z.string()]).optional(),
 });

@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../db';
+import { sendRouteError } from '../utils/httpErrors';
 
 const router = Router();
 
@@ -84,7 +85,7 @@ router.get('/', async (req: Request, res: Response) => {
       categoryDistribution,
     });
   } catch (error: any) {
-    res.status(500).json({ error: 'İstatistikler getirilirken hata oluştu: ' + error.message });
+    sendRouteError(res, error, 'İstatistikler getirilirken hata oluştu');
   }
 });
 

@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../db';
+import { sendRouteError } from '../utils/httpErrors';
 import { SettingsUpdateSchema } from '../schemas/validation';
 
 const router = Router();
@@ -27,7 +28,7 @@ router.get('/', async (req: Request, res: Response) => {
 
     res.json(settings);
   } catch (error: any) {
-    res.status(500).json({ error: 'Ayarlar getirilirken hata oluştu: ' + error.message });
+    sendRouteError(res, error, 'Ayarlar getirilirken hata oluştu');
   }
 });
 
@@ -52,11 +53,7 @@ router.patch('/', async (req: Request, res: Response) => {
 
     res.json(settings);
   } catch (error: any) {
-    if (error.name === 'ZodError') {
-      res.status(400).json({ error: 'Geçersiz parametreler', details: error.errors });
-    } else {
-      res.status(500).json({ error: 'Ayarlar güncellenirken hata oluştu: ' + error.message });
-    }
+    sendRouteError(res, error, 'Ayarlar güncellenirken hata oluştu');
   }
 });
 

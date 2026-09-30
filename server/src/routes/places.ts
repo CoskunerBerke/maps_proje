@@ -3,6 +3,7 @@ import { prisma } from '../db';
 import { SearchRequestSchema } from '../schemas/validation';
 import { PlacesService } from '../services/placesService';
 import { checkSearchLimits, startOfLocalDay } from '../utils/searchLimits';
+import { sendRouteError } from '../utils/httpErrors';
 
 const router = Router();
 
@@ -81,11 +82,7 @@ router.post('/search', async (req: Request, res: Response) => {
       }
     }
 
-    if (error.name === 'ZodError') {
-      res.status(400).json({ error: 'Geçersiz parametreler', details: error.errors });
-    } else {
-      res.status(500).json({ error: error.message || 'Arama sırasında bir sunucu hatası oluştu.' });
-    }
+    sendRouteError(res, error, 'Arama sırasında bir sunucu hatası oluştu');
   }
 });
 

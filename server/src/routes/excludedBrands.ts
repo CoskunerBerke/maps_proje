@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../db';
+import { sendRouteError } from '../utils/httpErrors';
 import { ExcludedBrandSchema } from '../schemas/validation';
 
 const router = Router();
@@ -12,7 +13,7 @@ router.get('/', async (req: Request, res: Response) => {
     });
     res.json(brands);
   } catch (error: any) {
-    res.status(500).json({ error: 'Marka listesi getirilirken hata oluştu: ' + error.message });
+    sendRouteError(res, error, 'Marka listesi getirilirken hata oluştu');
   }
 });
 
@@ -35,11 +36,7 @@ router.post('/', async (req: Request, res: Response) => {
 
     res.status(201).json(brand);
   } catch (error: any) {
-    if (error.name === 'ZodError') {
-      res.status(400).json({ error: 'Geçersiz parametreler', details: error.errors });
-    } else {
-      res.status(500).json({ error: 'Marka eklenirken hata oluştu: ' + error.message });
-    }
+    sendRouteError(res, error, 'Marka eklenirken hata oluştu');
   }
 });
 
@@ -52,7 +49,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
     });
     res.json({ message: 'Marka başarıyla kaldırıldı.' });
   } catch (error: any) {
-    res.status(500).json({ error: 'Marka silinirken hata oluştu: ' + error.message });
+    sendRouteError(res, error, 'Marka silinirken hata oluştu');
   }
 });
 
