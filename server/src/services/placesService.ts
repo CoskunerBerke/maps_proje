@@ -2,6 +2,7 @@ import { prisma } from '../db';
 import { mockPlaces } from '../data/demoData';
 import { calculateDistance } from '../utils/distance';
 import { classifyWebsite } from '../utils/websiteClassifier';
+import { isChainBusiness } from '../utils/brandMatcher';
 
 export interface SearchParams {
   latitude: number;
@@ -63,7 +64,7 @@ export class PlacesService {
 
     // Load excluded chain brands from DB
     const excludedBrands = await prisma.excludedBrand.findMany();
-    const chainNames = excludedBrands.map(b => b.name.toLowerCase());
+    const chainNames = excludedBrands.map(b => b.name);
 
     const processedResults: PlaceResult[] = [];
     const dbUpserts: any[] = [];
@@ -79,9 +80,8 @@ export class PlacesService {
       // Web site classification
       const websiteStatus = classifyWebsite(place.websiteUri);
 
-      // Chain check
-      const placeNameLower = place.name.toLowerCase();
-      const isChain = chainNames.some(brand => placeNameLower.includes(brand));
+      // Chain check (whole-word brand match)
+      const isChain = isChainBusiness(place.name, chainNames);
 
       if (params.excludeChains && isChain) {
         continue; // Skip chain
