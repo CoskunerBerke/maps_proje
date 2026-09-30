@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { prisma } from '../db';
 import { SearchRequestSchema } from '../schemas/validation';
 import { PlacesService } from '../services/placesService';
+import { checkSearchLimits, startOfLocalDay } from '../utils/searchLimits';
 
 const router = Router();
 
@@ -10,6 +11,8 @@ router.post('/search', async (req: Request, res: Response) => {
   let session = null;
   try {
     const validated = SearchRequestSchema.parse(req.body);
+    // Duplicate categories would only cause duplicate (billed) API requests
+    validated.categories = Array.from(new Set(validated.categories));
 
     const settings = await prisma.appSettings.findUnique({ where: { id: 'global' } });
     
@@ -21,6 +24,22 @@ router.post('/search', async (req: Request, res: Response) => {
       return res.status(400).json({
         error: 'Google Places API anahtarı bulunamadı. server/.env dosyasına GOOGLE_MAPS_API_KEY ekleyin.'
       });
+    }
+
+    // Enforce the cost limits from the Settings page for real (billed) Google searches
+    if (!isDemo) {
+      const searchesToday = await prisma.searchSession.count({
+        where: { createdAt: { gte: startOfLocalDay() }, requestCount: { gt: 0 } },
+      });
+      const limitError = checkSearchLimits({
+        categoryCount: validated.categories.length,
+        searchesToday,
+        maxCategoriesPerSearch: settings?.maxCategoriesPerSearch ?? 10,
+        dailyMaxSearches: settings?.dailyMaxSearches ?? 100,
+      });
+      if (limitError) {
+        return res.status(limitError.status).json({ error: limitError.error });
+      }
     }
 
     // 1. Create a search session in DB

@@ -4,7 +4,8 @@ export const SearchRequestSchema = z.object({
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
   radius: z.number().min(50).max(50000), // radius in meters
-  categories: z.array(z.string()).min(1),
+  // Google Places types, e.g. "restaurant", "hair_salon" (each category = one API request)
+  categories: z.array(z.string().regex(/^[a-z0-9_]{1,64}$/)).min(1).max(50),
   onlyOpen: z.boolean().default(false),
   onlyWithPhone: z.boolean().default(false),
   minimumRating: z.number().min(0).max(5).default(0),
