@@ -1,128 +1,154 @@
-# Eksik Web - Yakındaki Web Sitesi Olmayan İşletmeleri Tespit Etme Uygulaması
+# Eksik Web — Local Business Website Finder
 
-Bu web uygulaması, kullanıcının çevresindeki yerel işletmeleri Google Places API (New) üzerinden tarayarak **web sitesi bulunmayan** veya **yalnızca sosyal medya hesabı (Instagram, Facebook vb.) olan** işletmeleri tespit eder. Yerel işletmelere web tasarım ve SEO hizmetleri satmak isteyen ajanslar ve serbest çalışanlar (freelancer) için bir **B2B potansiyel müşteri bulma (lead generation) ve CRM takip aracı** olarak tasarlanmıştır.
+**A lead-generation and CRM tool that scans nearby businesses on Google Maps and finds the ones without a website.**
 
----
+![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3-06B6D4?logo=tailwindcss&logoColor=white)
+![Leaflet](https://img.shields.io/badge/Leaflet-1.9-199900?logo=leaflet&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-20+-339933?logo=nodedotjs&logoColor=white)
+![Express](https://img.shields.io/badge/Express-4-000000?logo=express&logoColor=white)
+![Prisma](https://img.shields.io/badge/Prisma-5-2D3748?logo=prisma&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-003B57?logo=sqlite&logoColor=white)
+![Vitest](https://img.shields.io/badge/Vitest-1-6E9F18?logo=vitest&logoColor=white)
 
-## Proje Yapısı
+> **Status:** personal tool, built to run locally (a Windows launcher script is included). Work in progress.
 
-Proje iki ana klasörden oluşmaktadır:
-- `/client`: React, Vite, TypeScript, Tailwind CSS, Leaflet Maps (Önyüz)
-- `/server`: Node.js, Express, TypeScript, Prisma, SQLite (Arkayüz & Veritabanı)
+## Overview
 
----
+Eksik Web ("missing web") scans the area around a chosen location through the **Google Places API (New)** and classifies every business as:
 
-## Windows Kurulum ve Çalıştırma Kılavuzu
+- **no website**
+- **social media only** (Instagram, Facebook, TikTok, X, YouTube, LinkedIn)
+- **has a website**
 
-### Gereksinimler
-- **Node.js**: Sürüm 20 veya üzeri kurulu olmalıdır ([Node.js İndir](https://nodejs.org/)).
+It is designed for freelancers and small agencies who sell web design / SEO services to local businesses: find the businesses that need a website, track calls and notes in a built-in CRM, and export the list.
 
-### Adım Adım Kurulum (PowerShell)
+## Features
 
-Aşağıdaki komutları sırasıyla Windows PowerShell terminalinde çalıştırın:
+- **Dashboard** — overall statistics for scans and businesses found
+- **New scan** — pick a location (or use your current location), radius and categories, then run a Places Nearby Search
+- **Results list** — filter by website status and CRM status, sort by distance, rating or review count; export to **CSV** or **Excel (.xlsx)**
+- **Map view** — results plotted on an interactive Leaflet map
+- **CRM tracking** — call status and notes per business
+- **Excluded brands** — skip chain brands so only independent businesses are listed
+- **Demo mode** — works without an API key using seeded sample businesses (Ankara / Istanbul)
+- **Demo site generator (experimental)** — for a selected business, generates a one-page website with the Gemini API (using its Google photos and 4–5 star reviews) and deploys it to Vercel; the Gemini key and Vercel token are entered on the Settings page
+- Simple in-memory rate limiting and request validation with Zod
 
-1. **Proje klasörünü terminalde açın:**
-   ```powershell
-   cd "C:\Users\berke\OneDrive\Masaüstü\Maps proje"
-   ```
+## Tech stack
 
-2. **Bağımlılıkları tek bir komutla yükleyin:**
-   ```powershell
-   npm run install:all
-   ```
+| Layer | Technology |
+| --- | --- |
+| Client | React 18, TypeScript, Vite, Tailwind CSS, React Leaflet, lucide-react |
+| Server | Node.js, Express, TypeScript, Zod, xlsx |
+| Database | Prisma ORM + SQLite |
+| External APIs | Google Places API (New), Gemini API, Vercel API |
+| Tests | Vitest |
 
-3. **Çevresel değişkenler (.env) dosyasını oluşturun:**
-   ```powershell
-   Copy-Item server/.env.example server/.env
-   ```
+## Project structure
 
-4. **API Anahtarını ekleyin:**
-   `server/.env` dosyasını herhangi bir metin editörü (Notepad, VS Code vb.) ile açın ve `GOOGLE_MAPS_API_KEY=` kısmına Google Cloud'dan aldığınız API anahtarını ekleyin (API anahtarınız yoksa uygulamayı test etmek için Ayarlar sayfasından **Demo Modu**'nu aktifleştirebilirsiniz).
-   ```env
-   GOOGLE_MAPS_API_KEY=AIzaSy...
-   PORT=3001
-   DATABASE_URL="file:./dev.db"
-   ```
-
-5. **Prisma veritabanını hazırlayın (Tabloları oluşturun ve seed verilerini yükleyin):**
-   ```powershell
-   npm run prisma:generate --prefix server
-   npm run prisma:migrate --prefix server
-   npm run prisma:seed --prefix server
-   ```
-
-6. **Uygulamayı geliştirme modunda (Dev) başlatın:**
-   ```powershell
-   npm run dev
-   ```
-   Bu komut, önyüz (port 5173) ve arkayüz (port 3001) sunucularını aynı anda başlatır.
-
-7. **Tarayıcınızda uygulamayı açın:**
-   [http://localhost:5173](http://localhost:5173)
-
----
-
-## Google Cloud Platform (GCP) Ayarları
-
-Gerçek işletme verilerini taramak için bir Google Harita API anahtarına ihtiyacınız vardır. Aşağıdaki adımları takip ederek anahtarınızı oluşturabilirsiniz:
-
-1. **Google Cloud Console'a gidin:** [GCP Console](https://console.cloud.google.com/) adresinde oturum açın.
-2. **Proje Oluşturun:** Sol üst menüden yeni bir proje oluşturun veya mevcut bir projeyi seçin.
-3. **Faturalandırma (Billing) Hesabı Bağlayın:** Google Harita API'lerini kullanabilmek için projenize geçerli bir faturalandırma hesabı (kredi kartı) bağlamalısınız. *Not: Google her ay her hesap için 200$'lık ücretsiz kullanım kredisi tanımlar.*
-4. **Places API (New) Etkinleştirin:** "API'ler ve Hizmetler" > "Kitaplık" (Library) bölümüne gidin. **Places API** aramasını yapın ve **Etkinleştir** (Enable) butonuna tıklayın.
-5. **API Anahtarı Oluşturun:** "API'ler ve Hizmetler" > "Kimlik Bilgileri" (Credentials) sekmesine tıklayın. **Kimlik Bilgisi Oluştur** > **API Anahtarı** (API Key) seçeneğini seçin.
-6. **API Anahtarını Sınırlandırın (Güvenlik Önlemi):** 
-   - Oluşturulan anahtarın ayarlarına gidin.
-   - "API Sınırlandırmaları" (API Restrictions) altından **Places API**'yi seçin. Bu sayede anahtarınız çalınsa bile diğer GCP servislerinde kullanılamaz.
-7. **Bütçe Uyarısı ve Kota Belirleyin:**
-   - Beklenmedik maliyetleri engellemek için "Faturalandırma" > "Bütçeler ve Uyarılar" sekmesinden bütçe uyarıları ayarlayın.
-   - "Places API" > "Yönet" > "Kotalar" kısmından günlük maksimum istek limiti belirleyebilirsiniz.
-
----
-
-## Demo Modu Nasıl Çalışır?
-
-Uygulamanın çalışmasını Google API anahtarınız olmadan test etmek istiyorsanız **Demo Modu**'nu kullanabilirsiniz:
-1. Uygulamada **Ayarlar** sayfasına gidin.
-2. **"Demo Verileriyle Çalış"** seçeneğini aktif hale getirin.
-3. **Yeni Tarama** sayfasında Ankara veya İstanbul yakınlarında (Örn: Enlem 39.9334, Boylam 32.8597) arama başlattığınızda sistem Google Places API'ye istek göndermez, onun yerine veritabanındaki zengin seed verileri üzerinden simülasyon gerçekleştirir.
-4. Bu modda, bazı işletmelerin web sitesi null, bazılarının sadece Instagram hesabı var, bazılarının ise web sitesi var olarak döner ve tüm CRM, Harita ve Dışa Aktarım özelliklerini test edebilirsiniz.
-
----
-
-## Gerçek Google Places API İle Test Adımları
-
-1. `server/.env` dosyasındaki `GOOGLE_MAPS_API_KEY` alanına geçerli bir API anahtarı ekleyin.
-2. Ayarlar sayfasından **Demo Modu**'nu kapatın.
-3. Yeni Tarama sayfasına gelerek **"Konumumu Kullan"** butonuna basın veya haritadan arama yapmak istediğiniz konumu seçin.
-4. Kategorileri seçin (Örn: Kafe, Kuaför, Restoran) ve **Taramayı Başlat** butonuna basın.
-5. Google Places API (New) Nearby Search endpoint'i üzerinden canlı veriler çekilecek, sistem web sitelerini sınıflandıracak ve sizi sonuç tablosuna yönlendirecektir.
-
----
-
-## Olası Windows PowerShell Hataları ve Çözümleri
-
-### 1. `Execution Policy` (Betik Çalıştırma Engeli) Hatası
-**Hata:** PowerShell scriptleri veya npm komutları çalıştırılırken `Scriptlerin çalıştırılması sisteminizde devre dışı bırakıldığından...` gibi bir güvenlik uyarısı alabilirsiniz.
-**Çözüm:** PowerShell'i **Yönetici Olarak** açın ve şu komutu çalıştırın:
-```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
-Ardından gelen soruya `Y` (Evet) yanıtını verin ve terminali kapatıp yeniden açın.
-
-### 2. `PORT 3001 veya 5173 Zaten Kullanımda` Hatası
-**Hata:** Node sunucusu başlatılırken `Error: listen EADDRINUSE: address already in use :::3001` hatası alabilirsiniz.
-**Çözüm:** Bu portları kullanan arka plan işlemlerini kapatmak için PowerShell'de şu komutu çalıştırın:
-```powershell
-# Port 3001'i dinleyen işlemi bulup kapatmak için:
-Get-Process -Id (Get-NetTCPConnection -LocalPort 3001).OwningProcess | Stop-Process -Force
+maps_proje/
+├── client/                 # React + Vite front end
+│   └── src/pages/          # Dashboard, NewScan, Businesses, MapView, CRMTracking, Settings
+├── server/                 # Express + Prisma back end
+│   ├── prisma/             # schema.prisma, migrations, seed.ts
+│   └── src/
+│       ├── routes/         # places, businesses, sessions, settings, statistics, excluded-brands
+│       ├── services/       # placesService, aiWebsiteService
+│       ├── utils/          # website classifier, distance, email finder
+│       └── tests/          # Vitest tests
+├── baslat.bat              # Windows one-click launcher
+└── package.json            # root scripts (runs client + server together)
 ```
 
-### 3. SQLite veya Prisma Kilitlenme Hatası
-**Hata:** SQLite veritabanı kilitlendiğinde veya Prisma migration uygulanırken hata alındığında.
-**Çözüm:** `server/prisma/dev.db` dosyasını silin ve migration komutlarını baştan çalıştırın:
-```powershell
-Remove-Item server/prisma/dev.db -ErrorAction SilentlyContinue
+## Getting started
+
+Requirements: **Node.js 20+**.
+
+```bash
+# 1. Install root, client and server dependencies
+npm run install:all
+
+# 2. Create the server environment file
+cp server/.env.example server/.env        # PowerShell: Copy-Item server/.env.example server/.env
+
+# 3. Prepare the database
+npm run prisma:generate --prefix server
 npm run prisma:migrate --prefix server
 npm run prisma:seed --prefix server
+
+# 4. Start client (http://localhost:5173) and server (port 3001)
+npm run dev
 ```
+
+Other scripts: `npm run build`, `npm start`, `npm test`.
+
+### Environment variables (`server/.env`)
+
+| Name | Purpose |
+| --- | --- |
+| `GOOGLE_MAPS_API_KEY` | Google Places API (New) key. If empty, the app runs in demo mode. |
+| `PORT` | API server port (default `3001`) |
+| `DATABASE_URL` | SQLite connection string, e.g. `file:./dev.db` |
+
+### Google Cloud setup (short)
+
+1. Create a project in Google Cloud Console and attach a billing account.
+2. Enable **Places API (New)**.
+3. Create an API key and **restrict it to the Places API**.
+4. Set budget alerts and daily quotas to avoid unexpected costs.
+
+### Troubleshooting (Windows)
+
+- **Execution policy error:** `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
+- **Port 3001/5173 already in use:** stop the process that owns the port, then run `npm run dev` again.
+- **SQLite/Prisma lock:** delete `server/prisma/dev.db` and re-run the migrate and seed commands.
+
+---
+
+## Türkçe
+
+**Eksik Web**, Google Haritalar üzerinden çevredeki işletmeleri tarayıp **web sitesi olmayan** veya **yalnızca sosyal medya hesabı olan** işletmeleri bulan bir potansiyel müşteri (lead) bulma ve CRM aracıdır.
+
+> **Durum:** Yerelde çalışacak şekilde geliştirilmiş kişisel bir araç (Windows için başlatma dosyası mevcut). Geliştirme devam ediyor.
+
+### Ne işe yarar?
+
+Yerel işletmelere web tasarım ve SEO hizmeti satan serbest çalışanlar ve küçük ajanslar için tasarlandı. Seçilen konum çevresindeki işletmeler **Google Places API (New)** ile taranır ve her işletme "web sitesi yok", "sadece sosyal medya" veya "web sitesi var" olarak sınıflandırılır.
+
+### Özellikler
+
+- **Genel Durum Paneli** — tarama ve işletme istatistikleri
+- **Yeni Bölge Tarama** — konum, yarıçap ve kategori seçerek tarama başlatma
+- **İşletmeler Sonuç Listesi** — web sitesi ve CRM durumuna göre filtreleme, mesafe/puan/yorum sayısına göre sıralama, **CSV** ve **Excel** dışa aktarma
+- **Harita Görünümü** — sonuçların Leaflet haritası üzerinde gösterimi
+- **Müşteri Takip Sistemi (CRM)** — arama durumu ve notlar
+- **Hariç tutulan markalar** — zincir markaları sonuçlardan çıkarma
+- **Demo Modu** — API anahtarı olmadan örnek verilerle test
+- **Demo site oluşturucu (deneysel)** — seçilen işletme için Gemini API ile tek sayfalık site üretip Vercel'e yükler; Gemini anahtarı ve Vercel token'ı Ayarlar sayfasından girilir
+
+### Kurulum
+
+Gereksinim: **Node.js 20+**
+
+```bash
+npm run install:all
+cp server/.env.example server/.env
+npm run prisma:generate --prefix server
+npm run prisma:migrate --prefix server
+npm run prisma:seed --prefix server
+npm run dev
+```
+
+Uygulama `http://localhost:5173` adresinde açılır; API `3001` portunda çalışır. Windows'ta `baslat.bat` dosyası uygulamayı tek tıkla başlatır.
+
+**Ortam değişkenleri (`server/.env`):** `GOOGLE_MAPS_API_KEY`, `PORT`, `DATABASE_URL`. API anahtarı girilmezse uygulama demo modunda çalışır.
+
+**Google Cloud:** Proje oluşturun, faturalandırma hesabı bağlayın, **Places API (New)**'yi etkinleştirin, API anahtarı oluşturup yalnızca Places API ile sınırlandırın ve bütçe uyarısı / günlük kota belirleyin.
+
+---
+
+Built by [Berke Coşkuner](https://github.com/CoskunerBerke)
