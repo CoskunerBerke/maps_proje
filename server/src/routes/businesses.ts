@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { prisma } from '../db';
 import { BusinessUpdateSchema } from '../schemas/validation';
 import { calculateDistance } from '../utils/distance';
+import { buildBusinessWhere, parseCoordinate } from '../utils/businessFilters';
 import { toCsvRow } from '../utils/csv';
 import * as XLSX from 'xlsx';
 import { findEmail } from '../utils/emailFinder';
@@ -14,7 +15,7 @@ const router = Router();
 router.get('/', async (req: Request, res: Response) => {
   try {
     const {
-      status, // website status: 'no_website', 'social_media_only', 'has_website', 'all'
+      status, // website status: 'no_website', 'social_media_only', 'has_website', 'all', 'all_website_less' (default)
       callingStatus, // specific CRM calling status
       crmGroup, // 'aranmamis', 'arananlar', 'olumlu', 'olumsuz', 'daha_sonra_ara'
       onlyWithPhone, // 'true' or 'false'
@@ -25,72 +26,11 @@ router.get('/', async (req: Request, res: Response) => {
       excludeExisting, // 'true' or 'false' (hide previously listed businesses)
     } = req.query;
 
-    const userLat = lat ? parseFloat(lat as string) : null;
-    const userLng = lng ? parseFloat(lng as string) : null;
+    const userLat = parseCoordinate(lat);
+    const userLng = parseCoordinate(lng);
 
-    // 1. Build where clause
-    const where: any = {};
-
-    // Website status filter
-    if (status && status !== 'all') {
-      where.websiteStatus = status as string;
-    } else if (!status) {
-      // Default: show only no_website and social_media_only
-      where.websiteStatus = { in: ['no_website', 'social_media_only'] };
-    }
-
-    // Phone filter
-    if (onlyWithPhone === 'true') {
-      where.OR = [
-        { nationalPhoneNumber: { not: null } },
-        { internationalPhoneNumber: { not: null } },
-      ];
-    }
-
-    // CRM calling status filter
-    if (callingStatus) {
-      where.callingStatus = callingStatus as string;
-    }
-
-    // CRM Group filters
-    if (crmGroup) {
-      switch (crmGroup) {
-        case 'aranmamis':
-          where.callingStatus = 'Henüz aranmadı';
-          break;
-        case 'arananlar':
-          where.callingStatus = { not: 'Henüz aranmadı' };
-          break;
-        case 'olumlu':
-          where.callingStatus = { in: ['Müşteriye dönüştü', 'İlgileniyor', 'Teklif istiyor', 'Mesaja geri dönüş sağlandı', 'Mesaja geri dönüş sağlandı, müşteri olmak istiyor'] };
-          break;
-        case 'olumsuz':
-          where.callingStatus = { in: ['Web sitesi istemiyor', 'Yanlış telefon'] };
-          break;
-        case 'daha_sonra_ara':
-          where.callingStatus = 'Daha sonra ara';
-          break;
-      }
-    }
-
-    // Text search filter (name or address)
-    if (search && (search as string).trim() !== '') {
-      const searchStr = (search as string).trim();
-      where.OR = [
-        { name: { contains: searchStr } },
-        { formattedAddress: { contains: searchStr } },
-      ];
-    }
-
-    // Exclude previously listed businesses (already modified or has notes, or createdAt < lastSeenAt)
-    if (excludeExisting === 'true') {
-      // Businesses that have notes or callingStatus != 'Henüz aranmadı'
-      // are considered "previously listed and processed".
-      // Or simply: createdAt < lastSeenAt (which updates on subsequent searches).
-      // Let's filter out ones where callingStatus is not 'Henüz aranmadı' OR they have notes.
-      where.callingStatus = 'Henüz aranmadı';
-      where.notes = { none: {} };
-    }
+    // 1. Build where clause (website status, phone, CRM status/group, text search, exclude processed)
+    const where = buildBusinessWhere({ status, callingStatus, crmGroup, onlyWithPhone, search, excludeExisting });
 
     // 2. Fetch businesses from DB
     const businesses = await prisma.business.findMany({
@@ -322,8 +262,8 @@ router.post('/export/csv', async (req: Request, res: Response) => {
 router.post('/export/xlsx', async (req: Request, res: Response) => {
   try {
     const { businessIds, lat, lng } = req.body;
-    const userLat = lat ? parseFloat(lat as string) : null;
-    const userLng = lng ? parseFloat(lng as string) : null;
+    const userLat = parseCoordinate(lat);
+    const userLng = parseCoordinate(lng);
 
     const businesses = await prisma.business.findMany({
       where: businessIds ? { id: { in: businessIds } } : {},
