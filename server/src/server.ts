@@ -10,19 +10,27 @@ import settingsRouter from './routes/settings';
 import statisticsRouter from './routes/statistics';
 import excludedBrandsRouter from './routes/excludedBrands';
 import sessionsRouter from './routes/sessions';
+import { localOnly, parseAllowedHosts } from './utils/localOnly';
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = Number(process.env.PORT) || 3001;
+// Local single-user tool: listen on the loopback interface only by default.
+// Do NOT expose this server to a network - it has no login system.
+const HOST = process.env.HOST || '127.0.0.1';
+const ALLOWED_HOSTS = parseAllowedHosts(process.env.ALLOWED_HOSTS);
+
+// Reject requests with a non-local Host header (DNS rebinding) or a foreign Origin (CSRF)
+app.use(localOnly(ALLOWED_HOSTS));
 
 // CORS setup: Only allow the local frontend URL (http://localhost:5173)
 app.use(
   cors({
     origin: 'http://localhost:5173',
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'X-Goog-Api-Key', 'X-Goog-FieldMask'],
+    allowedHeaders: ['Content-Type'],
     credentials: true,
   })
 );
@@ -75,6 +83,6 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`Server is running at http://localhost:${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`Server is running at http://${HOST}:${PORT}`);
 });
