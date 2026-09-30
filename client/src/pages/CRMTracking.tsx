@@ -27,9 +27,14 @@ interface CRMTrackingProps {
   userLocation: { lat: number; lng: number } | null;
 }
 
+// Must list every status the API accepts (see BusinessUpdateSchema), otherwise
+// businesses with a missing status disappear from every CRM stage.
 const CRM_STATUSES = [
   'Henüz aranmadı',
   'Arandı, ulaşılmadı',
+  'Mesaj atıldı',
+  'Mesaja geri dönüş sağlandı',
+  'Mesaja geri dönüş sağlandı, müşteri olmak istiyor',
   'İlgileniyor',
   'Teklif istiyor',
   'Daha sonra ara',
