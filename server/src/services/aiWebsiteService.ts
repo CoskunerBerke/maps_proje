@@ -1,3 +1,5 @@
+import { escapeHtml, safeHttpUrl, sanitizePhone } from '../utils/html';
+
 interface WebGenerationParams {
   businessName: string;
   category: string;
@@ -177,7 +179,7 @@ export class AIWebsiteService {
   static async generateHtml(params: WebGenerationParams): Promise<string> {
 
     const mapsEmbedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(params.businessName + ' ' + params.address)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
-    const mapsTargetUrl = params.googleMapsUri || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(params.businessName + ' ' + params.address)}`;
+    const mapsTargetUrl = safeHttpUrl(params.googleMapsUri, `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(params.businessName + ' ' + params.address)}`);
 
     const prompt = `
 Generate a beautiful, premium, fully functional single-page HTML website for a local business with the following details:
@@ -431,59 +433,13 @@ Design Requirements:
     });
 
     // ── Reviews Carousel Injection (works for BOTH Gemini and fallback output) ──
-    if (params.reviews && params.reviews.length > 0) {
-      const goodReviews = params.reviews
-        .filter(r => r.rating >= 4 && r.text && r.text.trim().length > 10)
-        .slice(0, 12);
-
-      if (goodReviews.length > 0) {
-        const allReviews = [...goodReviews, ...goodReviews]; // duplicate for seamless infinite loop
-        const cards = allReviews.map(r => {
-          const stars = '★'.repeat(Math.min(r.rating, 5)) + '☆'.repeat(Math.max(5 - r.rating, 0));
-          const shortText = r.text.length > 180 ? r.text.substring(0, 180) + '…' : r.text;
-          const initial = r.authorName ? r.authorName.substring(0, 1).toUpperCase() : '?';
-          const timeLabel = r.relativeTime ? ` · ${r.relativeTime}` : '';
-          return `<div style="flex-shrink:0;width:300px;background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:24px;box-shadow:0 4px 16px rgba(0,0,0,.06);margin:0 12px;">
-  <div style="color:#f59e0b;font-size:18px;font-weight:700;letter-spacing:2px;margin-bottom:12px;">${stars}</div>
-  <p style="color:#475569;font-size:13px;line-height:1.7;margin-bottom:16px;font-style:italic;">"${shortText}"</p>
-  <div style="display:flex;align-items:center;gap:12px;border-top:1px solid #f1f5f9;padding-top:14px;">
-    <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#eab308);display:flex;align-items:center;justify-content:center;color:#0f172a;font-weight:800;font-size:14px;flex-shrink:0;">${initial}</div>
-    <div>
-      <div style="font-weight:700;color:#0f172a;font-size:12px;">${r.authorName}</div>
-      <div style="color:#94a3b8;font-size:11px;">Google Yorumu${timeLabel}</div>
-    </div>
-  </div>
-</div>`;
-        }).join('');
-
-        const animDuration = Math.max(goodReviews.length * 7, 35);
-        const reviewsHtml = `
-<!-- ═══════════ Google Reviews Carousel ═══════════ -->
-<section style="padding:60px 0;background:#f8fafc;border-top:1px solid #e2e8f0;overflow:hidden;">
-  <div style="max-width:1200px;margin:0 auto 40px;padding:0 24px;text-align:center;">
-    <span style="display:inline-block;padding:6px 16px;border-radius:999px;background:rgba(245,158,11,.12);color:#b45309;font-weight:700;font-size:11px;letter-spacing:1px;margin-bottom:12px;">GOOGLE MÜŞTERİ YORUMLARI</span>
-    <h2 style="margin:0 0 8px;font-size:clamp(22px,4vw,34px);font-weight:800;color:#0f172a;">Müşterilerimiz Ne Diyor?</h2>
-    <p style="margin:0;color:#64748b;font-size:14px;">Google Maps üzerinden gelen gerçek müşteri değerlendirmeleri</p>
-  </div>
-  <div style="position:relative;">
-    <div style="position:absolute;left:0;top:0;bottom:0;width:80px;background:linear-gradient(to right,#f8fafc,transparent);z-index:2;pointer-events:none;"></div>
-    <div style="position:absolute;right:0;top:0;bottom:0;width:80px;background:linear-gradient(to left,#f8fafc,transparent);z-index:2;pointer-events:none;"></div>
-    <div id="greviews-track" style="display:flex;animation:greviewsScroll ${animDuration}s linear infinite;width:max-content;">
-      ${cards}
-    </div>
-  </div>
-</section>
-<style>
-  @keyframes greviewsScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
-  #greviews-track:hover{animation-play-state:paused}
-</style>`;
-
-        // Inject before </body>
-        if (htmlContent.includes('</body>')) {
-          htmlContent = htmlContent.replace('</body>', reviewsHtml + '\n</body>');
-        } else {
-          htmlContent += reviewsHtml;
-        }
+    const reviewsHtml = buildReviewsSection(params.reviews || []);
+    if (reviewsHtml) {
+      // Inject before </body> (replacer function: "$&" etc. in review text must not be expanded)
+      if (htmlContent.includes('</body>')) {
+        htmlContent = htmlContent.replace('</body>', () => reviewsHtml + '\n</body>');
+      } else {
+        htmlContent += reviewsHtml;
       }
     }
 
@@ -578,7 +534,7 @@ Design Requirements:
   }
 }
 
-function buildFallbackHtml(params: WebGenerationParams): string {
+export function buildFallbackHtml(params: WebGenerationParams): string {
   const categoryKey = getCategoryKey(params.category, params.businessName);
   const fallbacks = FALLBACK_IMAGES[categoryKey] || FALLBACK_IMAGES.general;
   const heroImage = (params.downloadedPhotos && params.downloadedPhotos.length > 0) ? `./photo-1.jpg` : fallbacks[0];
@@ -637,14 +593,21 @@ function buildFallbackHtml(params: WebGenerationParams): string {
 
   const rawPhone = params.phone ? params.phone.replace(/[^0-9]/g, '') : '';
   const mapsEmbedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(params.businessName + ' ' + params.address)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
-  const mapsTargetUrl = params.googleMapsUri || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(params.businessName + ' ' + params.address)}`;
+  const mapsSearchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(params.businessName + ' ' + params.address)}`;
+  const mapsTargetUrl = escapeHtml(safeHttpUrl(params.googleMapsUri, mapsSearchUrl));
+
+  // Business data comes from the Google Places API (third-party input): escape before building HTML
+  const businessName = escapeHtml(params.businessName);
+  const businessInitial = escapeHtml(params.businessName.substring(0, 1).toUpperCase());
+  const address = escapeHtml(params.address);
+  const phone = escapeHtml(sanitizePhone(params.phone));
 
           return `<!DOCTYPE html>
 <html lang="tr" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${params.businessName} - Resmi Web Sitesi</title>
+    <title>${businessName} - Resmi Web Sitesi</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -658,8 +621,8 @@ function buildFallbackHtml(params: WebGenerationParams): string {
     <header class="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-sm transition-all">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
             <a href="#" class="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3 group">
-                ${(params.downloadedPhotos && params.downloadedPhotos.length > 0) ? `<img src="./photo-1.jpg" alt="${params.businessName} Logo" class="w-10 h-10 rounded-xl object-cover shadow-md group-hover:scale-105 transition-transform" onerror="this.onerror=null;this.style.display='none';this.nextElementSibling.style.display='flex';"><span style="display:none" class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-400 items-center justify-center text-slate-950 text-lg font-black shadow-md">${params.businessName.substring(0, 1).toUpperCase()}</span>` : `<span class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-400 flex items-center justify-center text-slate-950 text-lg font-black shadow-md group-hover:scale-105 transition-transform">${params.businessName.substring(0, 1).toUpperCase()}</span>`}
-                <span class="text-slate-900 font-extrabold">${params.businessName}</span>
+                ${(params.downloadedPhotos && params.downloadedPhotos.length > 0) ? `<img src="./photo-1.jpg" alt="${businessName} Logo" class="w-10 h-10 rounded-xl object-cover shadow-md group-hover:scale-105 transition-transform" onerror="this.onerror=null;this.style.display='none';this.nextElementSibling.style.display='flex';"><span style="display:none" class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-400 items-center justify-center text-slate-950 text-lg font-black shadow-md">${businessInitial}</span>` : `<span class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-400 flex items-center justify-center text-slate-950 text-lg font-black shadow-md group-hover:scale-105 transition-transform">${businessInitial}</span>`}
+                <span class="text-slate-900 font-extrabold">${businessName}</span>
             </a>
             <nav class="hidden md:flex items-center gap-8">
                 <a href="#anasayfa" class="text-slate-800 font-semibold hover:text-amber-600 transition-colors py-1">Anasayfa</a>
@@ -668,7 +631,7 @@ function buildFallbackHtml(params: WebGenerationParams): string {
                 <a href="#iletisim" class="text-slate-800 font-semibold hover:text-amber-600 transition-colors py-1">İletişim</a>
             </nav>
             <div class="flex items-center gap-3">
-                ${params.phone ? `<a href="tel:${params.phone}" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-extrabold text-sm hover:brightness-105 transition-all shadow-md shadow-amber-500/20 flex items-center gap-2">
+                ${phone ? `<a href="tel:${phone}" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-extrabold text-sm hover:brightness-105 transition-all shadow-md shadow-amber-500/20 flex items-center gap-2">
                     <i class="fa-solid fa-phone"></i> <span class="hidden sm:inline">Hemen Ara</span>
                 </a>` : ''}
                 <button onclick="openModal()" class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-800 hover:bg-slate-100 font-bold text-sm transition-all hidden sm:flex items-center gap-2">
@@ -694,11 +657,11 @@ function buildFallbackHtml(params: WebGenerationParams): string {
 
             <!-- Main Title -->
             <h1 class="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-slate-900 mb-8 leading-tight max-w-4xl mx-auto">
-                ${params.businessName}
+                ${businessName}
             </h1>
 
             <p class="text-base sm:text-xl text-slate-600 max-w-3xl mx-auto mb-10 leading-relaxed font-normal">
-                ${params.address} adresinde ${term.heroDesc}
+                ${address} adresinde ${term.heroDesc}
             </p>
 
             <div class="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-md mx-auto">
@@ -773,7 +736,7 @@ function buildFallbackHtml(params: WebGenerationParams): string {
                     CANLI KONUM & HARİTA
                 </span>
                 <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-3">Haritada Canlı Konumumuz</h2>
-                <p class="text-slate-600 text-sm sm:text-base">${params.address}</p>
+                <p class="text-slate-600 text-sm sm:text-base">${address}</p>
             </div>
             <div class="bg-white p-4 rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
                 <iframe src="${mapsEmbedUrl}" class="w-full h-[450px] rounded-2xl border-0" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
@@ -789,16 +752,16 @@ function buildFallbackHtml(params: WebGenerationParams): string {
                     <span class="px-3.5 py-1.5 rounded-full bg-amber-500/20 text-amber-400 font-bold text-xs mb-4 inline-block">
                         İLETİŞİM & BİLGİ
                     </span>
-                    <h2 class="text-3xl sm:text-4xl font-extrabold text-white mb-6">${params.businessName}</h2>
-                    <p class="text-slate-300 mb-8 font-light text-base leading-relaxed">${params.address}</p>
+                    <h2 class="text-3xl sm:text-4xl font-extrabold text-white mb-6">${businessName}</h2>
+                    <p class="text-slate-300 mb-8 font-light text-base leading-relaxed">${address}</p>
                     <div class="space-y-5">
-                        ${params.phone ? `<div class="flex items-center gap-4">
+                        ${phone ? `<div class="flex items-center gap-4">
                             <span class="w-12 h-12 rounded-2xl bg-amber-500/20 flex items-center justify-center text-amber-400 text-lg shrink-0">
                                 <i class="fa-solid fa-phone"></i>
                             </span>
                             <div>
                                 <div class="text-xs text-slate-400 font-medium">Telefon</div>
-                                <div class="font-bold text-lg text-white">${params.phone}</div>
+                                <div class="font-bold text-lg text-white">${phone}</div>
                             </div>
                         </div>` : ''}
                         <div class="flex items-center gap-4">
@@ -812,7 +775,7 @@ function buildFallbackHtml(params: WebGenerationParams): string {
                         </div>
                     </div>
                     <div class="mt-10 flex flex-wrap gap-4">
-                        ${params.phone ? `<a href="tel:${params.phone}" class="px-6 py-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-sm transition-all shadow-md flex items-center gap-2">
+                        ${phone ? `<a href="tel:${phone}" class="px-6 py-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-sm transition-all shadow-md flex items-center gap-2">
                             <i class="fa-solid fa-phone"></i> Hemen Ara
                         </a>` : ''}
                         <a href="${mapsTargetUrl}" target="_blank" class="px-6 py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm transition-all border border-slate-700 flex items-center gap-2">
@@ -821,12 +784,12 @@ function buildFallbackHtml(params: WebGenerationParams): string {
                     </div>
                 </div>
                 <div class="h-80 sm:h-96 rounded-2xl overflow-hidden relative border border-slate-800 shadow-xl">
-                    <img src="${heroImage}" alt="${params.businessName}" class="w-full h-full object-cover">
+                    <img src="${heroImage}" alt="${businessName}" class="w-full h-full object-cover">
                     <div class="absolute inset-0 bg-slate-950/40 flex items-center justify-center p-6 text-center">
                         <div class="bg-slate-900/90 backdrop-blur-md p-6 rounded-2xl border border-slate-700 shadow-2xl">
                             <i class="fa-solid fa-location-dot text-amber-400 text-3xl mb-2"></i>
-                            <h4 class="font-bold text-white text-lg">${params.businessName}</h4>
-                            <p class="text-xs text-slate-300 mt-1">${params.address}</p>
+                            <h4 class="font-bold text-white text-lg">${businessName}</h4>
+                            <p class="text-xs text-slate-300 mt-1">${address}</p>
                         </div>
                     </div>
                 </div>
@@ -837,7 +800,7 @@ function buildFallbackHtml(params: WebGenerationParams): string {
     <!-- Footer -->
     <footer class="py-10 bg-slate-950 text-slate-400 text-center text-xs border-t border-slate-900">
         <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div class="font-semibold text-white">${params.businessName}</div>
+            <div class="font-semibold text-white">${businessName}</div>
             <p>© 2026 Tüm hakları saklıdır.</p>
         </div>
     </footer>
@@ -901,4 +864,64 @@ function buildFallbackHtml(params: WebGenerationParams): string {
     </script>
 </body>
 </html>`;
+}
+
+/**
+ * Builds the Google reviews carousel section (4-5 star reviews only).
+ * Returns an empty string when there is no review to show.
+ */
+export function buildReviewsSection(
+  reviews: { authorName: string; rating: number; text: string; relativeTime?: string }[]
+): string {
+  const goodReviews = reviews
+    .filter(r => r.rating >= 4 && r.text && r.text.trim().length > 10)
+    .slice(0, 12);
+
+  if (goodReviews.length === 0) {
+    return '';
+  }
+
+  const allReviews = [...goodReviews, ...goodReviews]; // duplicate for seamless infinite loop
+  const cards = allReviews.map(r => {
+    const rating = Math.max(0, Math.min(5, Math.round(Number(r.rating) || 0)));
+    const stars = '★'.repeat(rating) + '☆'.repeat(5 - rating);
+    // Review text and author names are written by third parties: always escape them
+    const shortText = escapeHtml(r.text.length > 180 ? r.text.substring(0, 180) + '…' : r.text);
+    const initial = escapeHtml(r.authorName ? r.authorName.substring(0, 1).toUpperCase() : '?');
+    const authorName = escapeHtml(r.authorName);
+    const timeLabel = r.relativeTime ? ` · ${escapeHtml(r.relativeTime)}` : '';
+    return `<div style="flex-shrink:0;width:300px;background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:24px;box-shadow:0 4px 16px rgba(0,0,0,.06);margin:0 12px;">
+  <div style="color:#f59e0b;font-size:18px;font-weight:700;letter-spacing:2px;margin-bottom:12px;">${stars}</div>
+  <p style="color:#475569;font-size:13px;line-height:1.7;margin-bottom:16px;font-style:italic;">"${shortText}"</p>
+  <div style="display:flex;align-items:center;gap:12px;border-top:1px solid #f1f5f9;padding-top:14px;">
+    <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#eab308);display:flex;align-items:center;justify-content:center;color:#0f172a;font-weight:800;font-size:14px;flex-shrink:0;">${initial}</div>
+    <div>
+      <div style="font-weight:700;color:#0f172a;font-size:12px;">${authorName}</div>
+      <div style="color:#94a3b8;font-size:11px;">Google Yorumu${timeLabel}</div>
+    </div>
+  </div>
+</div>`;
+  }).join('');
+
+  const animDuration = Math.max(goodReviews.length * 7, 35);
+  return `
+<!-- ═══════════ Google Reviews Carousel ═══════════ -->
+<section style="padding:60px 0;background:#f8fafc;border-top:1px solid #e2e8f0;overflow:hidden;">
+  <div style="max-width:1200px;margin:0 auto 40px;padding:0 24px;text-align:center;">
+    <span style="display:inline-block;padding:6px 16px;border-radius:999px;background:rgba(245,158,11,.12);color:#b45309;font-weight:700;font-size:11px;letter-spacing:1px;margin-bottom:12px;">GOOGLE MÜŞTERİ YORUMLARI</span>
+    <h2 style="margin:0 0 8px;font-size:clamp(22px,4vw,34px);font-weight:800;color:#0f172a;">Müşterilerimiz Ne Diyor?</h2>
+    <p style="margin:0;color:#64748b;font-size:14px;">Google Maps üzerinden gelen gerçek müşteri değerlendirmeleri</p>
+  </div>
+  <div style="position:relative;">
+    <div style="position:absolute;left:0;top:0;bottom:0;width:80px;background:linear-gradient(to right,#f8fafc,transparent);z-index:2;pointer-events:none;"></div>
+    <div style="position:absolute;right:0;top:0;bottom:0;width:80px;background:linear-gradient(to left,#f8fafc,transparent);z-index:2;pointer-events:none;"></div>
+    <div id="greviews-track" style="display:flex;animation:greviewsScroll ${animDuration}s linear infinite;width:max-content;">
+      ${cards}
+    </div>
+  </div>
+</section>
+<style>
+  @keyframes greviewsScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+  #greviews-track:hover{animation-play-state:paused}
+</style>`;
 }
