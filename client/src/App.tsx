@@ -125,7 +125,7 @@ function App() {
         </nav>
 
         <div className="p-4 border-t border-slate-800 text-[11px] text-slate-500 text-center">
-          v1.0.0 &copy; Antigravity
+          v1.0.0 &copy; Berke Coşkuner
         </div>
       </aside>
 
