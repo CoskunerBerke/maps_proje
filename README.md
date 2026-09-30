@@ -193,7 +193,7 @@ With `NODE_ENV=production` the API also serves `client/dist` itself on port 3001
 - The API listens on `127.0.0.1` only and rejects requests whose `Host` header is not a local name (DNS rebinding) or whose `Origin` belongs to another website (CSRF).
 - The Google API key is read from `server/.env` and never sent to the browser. The Gemini key(s) and the Vercel token are stored in plain text in the local SQLite database.
 - Business names, addresses and reviews come from third parties: generated demo sites escape them, external links in the UI only allow `http(s)` URLs, and CSV cells starting with `=`, `+`, `-` or `@` are neutralized.
-- Requests are validated with Zod; database errors are logged on the server and not sent to the client.
+- Requests are validated with Zod; error responses carry a short message instead of database error details (those are logged on the server).
 - HTML written by the Gemini API is published as-is — review a generated site before sending it to a business.
 
 ## Status and roadmap
@@ -371,7 +371,7 @@ npm start         # API 127.0.0.1:3001, derlenmiş arayüz http://localhost:5173
 - API yalnızca `127.0.0.1` adresini dinler; `Host` başlığı yerel olmayan (DNS rebinding) veya `Origin` başlığı başka bir siteye ait (CSRF) istekleri reddeder.
 - Google API anahtarı `server/.env` dosyasından okunur ve tarayıcıya gönderilmez. Gemini anahtar(lar)ı ve Vercel token'ı yerel SQLite veritabanında düz metin olarak saklanır.
 - İşletme adları, adresler ve yorumlar üçüncü taraflardan gelir: üretilen demo sitelerde kaçışlanır, arayüzdeki dış bağlantılarda yalnızca `http(s)` adreslerine izin verilir ve `=`, `+`, `-` veya `@` ile başlayan CSV hücreleri etkisiz hale getirilir.
-- İstekler Zod ile doğrulanır; veritabanı hataları sunucuda loglanır, istemciye gönderilmez.
+- İstekler Zod ile doğrulanır; hata yanıtlarında veritabanı ayrıntıları yerine kısa bir mesaj döner (ayrıntılar sunucuda loglanır).
 - Gemini API'nin yazdığı HTML olduğu gibi yayınlanır — üretilen siteyi işletmeye göndermeden önce kontrol edin.
 
 ### Durum ve yol haritası
