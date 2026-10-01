@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { ErrorRequestHandler, Response } from 'express';
 
 /**
  * Sends a consistent JSON error response.
@@ -25,3 +25,30 @@ export function sendRouteError(res: Response, error: any, message: string) {
   const detail = !isPrismaError && error?.message ? ': ' + error.message : '';
   return res.status(500).json({ error: message + detail });
 }
+
+/**
+ * Final Express error handler. Without it, errors raised by express.json()
+ * (malformed JSON, body too large, ...) and errors that escape a route get
+ * Express's default HTML error page, which includes the stack trace and
+ * absolute server paths.
+ */
+export const jsonErrorHandler: ErrorRequestHandler = (error, _req, res, next) => {
+  if (res.headersSent) {
+    return next(error);
+  }
+
+  // body-parser errors carry a 4xx status and a type such as "entity.parse.failed"
+  const status = Number(error?.status ?? error?.statusCode);
+  if (error?.type === 'entity.parse.failed') {
+    return res.status(400).json({ error: 'İstek gövdesi geçerli bir JSON değil.' });
+  }
+  if (status === 413) {
+    return res.status(413).json({ error: 'İstek gövdesi çok büyük.' });
+  }
+  if (status >= 400 && status < 500) {
+    return res.status(status).json({ error: 'Geçersiz istek.' });
+  }
+
+  console.error('Beklenmeyen sunucu hatası:', error);
+  return res.status(500).json({ error: 'Beklenmeyen bir sunucu hatası oluştu.' });
+};
