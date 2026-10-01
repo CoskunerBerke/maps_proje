@@ -16,6 +16,11 @@ export interface MockPlace {
   isOpen: boolean;
 }
 
+/**
+ * Sample places for demo mode (no API key). Phone numbers (0312/0212/0216 000 00 xx)
+ * and social media handles are fictional; the chain brand entries are kept so the
+ * "exclude chains" filter has something to hide.
+ */
 export const mockPlaces: MockPlace[] = [
   // ANKARA (Center: 39.9334, 32.8597)
   {
@@ -29,8 +34,8 @@ export const mockPlaces: MockPlace[] = [
     rating: 4.2,
     userRatingCount: 340,
     websiteUri: "", // No website
-    nationalPhoneNumber: "0312 419 00 00",
-    internationalPhoneNumber: "+90 312 419 00 00",
+    nationalPhoneNumber: "0312 000 00 01",
+    internationalPhoneNumber: "+90 312 000 00 01",
     googleMapsUri: "https://maps.google.com/?cid=1",
     businessStatus: "OPERATIONAL",
     isOpen: true
@@ -45,9 +50,9 @@ export const mockPlaces: MockPlace[] = [
     longitude: 32.8612,
     rating: 4.8,
     userRatingCount: 42,
-    websiteUri: "https://instagram.com/tunalibutikerol", // Social media only
-    nationalPhoneNumber: "0532 999 88 77",
-    internationalPhoneNumber: "+90 532 999 88 77",
+    websiteUri: "https://instagram.com/ornek-butik-demo", // Social media only
+    nationalPhoneNumber: "0312 000 00 02",
+    internationalPhoneNumber: "+90 312 000 00 02",
     googleMapsUri: "https://maps.google.com/?cid=2",
     businessStatus: "OPERATIONAL",
     isOpen: true
@@ -62,9 +67,9 @@ export const mockPlaces: MockPlace[] = [
     longitude: 32.8224,
     rating: 4.5,
     userRatingCount: 1250,
-    websiteUri: "https://coffeelab.com.tr", // Has website
-    nationalPhoneNumber: "0312 222 11 00",
-    internationalPhoneNumber: "+90 312 222 11 00",
+    websiteUri: "https://ornek-coffee-lab.example", // Has website
+    nationalPhoneNumber: "0312 000 00 03",
+    internationalPhoneNumber: "+90 312 000 00 03",
     googleMapsUri: "https://maps.google.com/?cid=3",
     businessStatus: "OPERATIONAL",
     isOpen: true
@@ -80,8 +85,8 @@ export const mockPlaces: MockPlace[] = [
     rating: 4.0,
     userRatingCount: 5200,
     websiteUri: "https://starbucks.com.tr", // Has website, and is a chain brand
-    nationalPhoneNumber: "0312 418 00 11",
-    internationalPhoneNumber: "+90 312 418 00 11",
+    nationalPhoneNumber: "0312 000 00 04",
+    internationalPhoneNumber: "+90 312 000 00 04",
     googleMapsUri: "https://maps.google.com/?cid=4",
     businessStatus: "OPERATIONAL",
     isOpen: true
@@ -96,9 +101,9 @@ export const mockPlaces: MockPlace[] = [
     longitude: 32.8712,
     rating: 4.6,
     userRatingCount: 88,
-    websiteUri: "https://facebook.com/yildizkuaforankara", // Social media only
-    nationalPhoneNumber: "0312 440 22 33",
-    internationalPhoneNumber: "+90 312 440 22 33",
+    websiteUri: "https://facebook.com/ornek-kuafor-demo", // Social media only
+    nationalPhoneNumber: "0312 000 00 05",
+    internationalPhoneNumber: "+90 312 000 00 05",
     googleMapsUri: "https://maps.google.com/?cid=5",
     businessStatus: "OPERATIONAL",
     isOpen: true
@@ -114,8 +119,8 @@ export const mockPlaces: MockPlace[] = [
     rating: 3.9,
     userRatingCount: 154,
     websiteUri: "https://www.ayakkabidunyasi.com.tr", // Has website
-    nationalPhoneNumber: "0312 419 88 99",
-    internationalPhoneNumber: "+90 312 419 88 99",
+    nationalPhoneNumber: "0312 000 00 06",
+    internationalPhoneNumber: "+90 312 000 00 06",
     googleMapsUri: "https://maps.google.com/?cid=6",
     businessStatus: "OPERATIONAL",
     isOpen: true
@@ -131,8 +136,8 @@ export const mockPlaces: MockPlace[] = [
     rating: 4.7,
     userRatingCount: 220,
     websiteUri: undefined, // No website (undefined)
-    nationalPhoneNumber: "0312 481 00 22",
-    internationalPhoneNumber: "+90 312 481 00 22",
+    nationalPhoneNumber: "0312 000 00 07",
+    internationalPhoneNumber: "+90 312 000 00 07",
     googleMapsUri: "https://maps.google.com/?cid=7",
     businessStatus: "OPERATIONAL",
     isOpen: true
@@ -148,8 +153,8 @@ export const mockPlaces: MockPlace[] = [
     rating: 4.1,
     userRatingCount: 890,
     websiteUri: "https://defacto.com.tr", // Chain brand
-    nationalPhoneNumber: "0312 417 99 88",
-    internationalPhoneNumber: "+90 312 417 99 88",
+    nationalPhoneNumber: "0312 000 00 08",
+    internationalPhoneNumber: "+90 312 000 00 08",
     googleMapsUri: "https://maps.google.com/?cid=8",
     businessStatus: "OPERATIONAL",
     isOpen: true
@@ -173,7 +178,7 @@ export const mockPlaces: MockPlace[] = [
   },
   {
     id: "demo_place_10",
-    name: "Dominos Pizza Bahçelievler",
+    name: "Domino’s Pizza Bahçelievler",
     primaryType: "fast_food_restaurant",
     types: ["restaurant", "fast_food_restaurant", "food", "point_of_interest", "establishment"],
     formattedAddress: "Bahçelievler, 3. Cd. No:5, Çankaya/Ankara",
@@ -182,8 +187,8 @@ export const mockPlaces: MockPlace[] = [
     rating: 3.8,
     userRatingCount: 650,
     websiteUri: "https://dominos.com.tr", // Chain brand
-    nationalPhoneNumber: "0312 215 15 15",
-    internationalPhoneNumber: "+90 312 215 15 15",
+    nationalPhoneNumber: "0312 000 00 10",
+    internationalPhoneNumber: "+90 312 000 00 10",
     googleMapsUri: "https://maps.google.com/?cid=10",
     businessStatus: "OPERATIONAL",
     isOpen: true
@@ -201,8 +206,8 @@ export const mockPlaces: MockPlace[] = [
     rating: 4.4,
     userRatingCount: 980,
     websiteUri: "", // No website
-    nationalPhoneNumber: "0212 244 00 11",
-    internationalPhoneNumber: "+90 212 244 00 11",
+    nationalPhoneNumber: "0212 000 00 11",
+    internationalPhoneNumber: "+90 212 000 00 11",
     googleMapsUri: "https://maps.google.com/?cid=11",
     businessStatus: "OPERATIONAL",
     isOpen: true
@@ -217,7 +222,7 @@ export const mockPlaces: MockPlace[] = [
     longitude: 29.0245,
     rating: 4.6,
     userRatingCount: 4300,
-    websiteUri: "https://instagram.com/modacaybahcesi", // Social media only
+    websiteUri: "https://instagram.com/ornek-cay-bahcesi-demo", // Social media only
     nationalPhoneNumber: undefined,
     googleMapsUri: "https://maps.google.com/?cid=12",
     businessStatus: "OPERATIONAL",
@@ -233,9 +238,9 @@ export const mockPlaces: MockPlace[] = [
     longitude: 28.9892,
     rating: 4.7,
     userRatingCount: 29,
-    websiteUri: "https://nisantasigelinlik.com", // Has website
-    nationalPhoneNumber: "0212 230 44 55",
-    internationalPhoneNumber: "+90 212 230 44 55",
+    websiteUri: "https://ornek-gelinlik.example", // Has website
+    nationalPhoneNumber: "0212 000 00 13",
+    internationalPhoneNumber: "+90 212 000 00 13",
     googleMapsUri: "https://maps.google.com/?cid=13",
     businessStatus: "OPERATIONAL",
     isOpen: true
@@ -251,8 +256,8 @@ export const mockPlaces: MockPlace[] = [
     rating: 4.3,
     userRatingCount: 18,
     websiteUri: "", // No website
-    nationalPhoneNumber: "0216 333 44 55",
-    internationalPhoneNumber: "+90 216 333 44 55",
+    nationalPhoneNumber: "0216 000 00 14",
+    internationalPhoneNumber: "+90 216 000 00 14",
     googleMapsUri: "https://maps.google.com/?cid=14",
     businessStatus: "OPERATIONAL",
     isOpen: true
@@ -268,8 +273,8 @@ export const mockPlaces: MockPlace[] = [
     rating: 3.7,
     userRatingCount: 3100,
     websiteUri: "https://mcdonalds.com.tr", // Chain brand
-    nationalPhoneNumber: "0212 258 00 99",
-    internationalPhoneNumber: "+90 212 258 00 99",
+    nationalPhoneNumber: "0212 000 00 15",
+    internationalPhoneNumber: "+90 212 000 00 15",
     googleMapsUri: "https://maps.google.com/?cid=15",
     businessStatus: "OPERATIONAL",
     isOpen: true

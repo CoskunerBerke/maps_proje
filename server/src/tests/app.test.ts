@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { classifyWebsite } from '../utils/websiteClassifier';
 import { calculateDistance, formatDistance } from '../utils/distance';
+import { mockPlaces } from '../data/demoData';
 
 // 1. Mocking Prisma for Database Tests
 vi.mock('../db', () => {
@@ -104,6 +105,30 @@ describe('Places Service Arama & Filtreleme Testleri', () => {
     expect(hasStarbucks).toBe(false);
   });
 
+  it('Google adlarındaki kıvrık kesme işaretli zincirler (Domino’s) de gizlenmelidir', async () => {
+    vi.mocked(prisma.excludedBrand.findMany).mockResolvedValueOnce([
+      { id: '1', name: "Domino's" },
+    ]);
+
+    const results = await PlacesService.search(
+      {
+        latitude: 39.9334,
+        longitude: 32.8597,
+        radius: 3000,
+        categories: ['fast_food_restaurant'],
+        onlyOpen: false,
+        onlyWithPhone: false,
+        minimumRating: 0,
+        minimumReviewCount: 0,
+        excludeChains: true,
+      },
+      'session-123'
+    );
+
+    expect(mockPlaces.some(p => p.name.startsWith('Domino’s'))).toBe(true);
+    expect(results.some(p => p.name.startsWith('Domino'))).toBe(false);
+  });
+
   it('Arama sonucu eklenirken Place ID veritabanı upsert edilmelidir', async () => {
     const searchParams = {
       latitude: 39.9334,
@@ -163,5 +188,21 @@ describe('Places Service Arama & Filtreleme Testleri', () => {
     // Restore fetch
     global.fetch = originalFetch;
     delete process.env.GOOGLE_MAPS_API_KEY;
+  });
+});
+
+describe('Demo modu örnek verisi (demoData)', () => {
+  it('Telefon numaraları ve sosyal medya hesapları kurgusal olmalıdır', () => {
+    for (const place of mockPlaces) {
+      if (place.nationalPhoneNumber) {
+        expect(place.nationalPhoneNumber).toMatch(/^0(312|212|216) 000 00 \d{2}$/);
+      }
+      if (place.internationalPhoneNumber) {
+        expect(place.internationalPhoneNumber).toMatch(/^\+90 (312|212|216) 000 00 \d{2}$/);
+      }
+      if (place.websiteUri && /instagram|facebook/.test(place.websiteUri)) {
+        expect(place.websiteUri).toMatch(/\/ornek-[a-z-]+-demo$/);
+      }
+    }
   });
 });
