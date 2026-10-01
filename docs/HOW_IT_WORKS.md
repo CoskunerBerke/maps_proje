@@ -111,8 +111,9 @@ Every request passes through the same middleware chain, in this order ([`app.ts`
 flowchart LR
     Req["HTTP request"] --> G{"localOnly:<br/>Host and Origin allowed?"}
     G -- no --> R403["403 JSON"]
-    G -- yes --> C["cors: only<br/>http://localhost:5173"]
-    C --> J{"express.json:<br/>body parses?"}
+    G -- yes --> C{"cors: allow origin<br/>http://localhost:5173.<br/>OPTIONS preflight?"}
+    C -- yes --> R204["204, preflight answered"]
+    C -- no --> J{"express.json:<br/>body parses?"}
     J -- no --> R400["400 or 413 JSON<br/>(jsonErrorHandler)"]
     J -- yes --> L{"rate limiter:<br/>at most 100 per minute?"}
     L -- no --> R429["429 JSON"]
@@ -120,6 +121,8 @@ flowchart LR
     Rt -- "error caught in route" --> SRE["sendRouteError:<br/>400, 404 or 500"]
     Rt -- "error not caught" --> R500["generic 500 JSON"]
 ```
+
+The guard runs before `cors`, so a preflight from a foreign origin gets the guard's 403. Preflights from allowed hosts end at `cors` with 204 and never reach the rate limiter. Which requests each layer actually stops is explained in [5.13](#513-local-only-security-model).
 
 ### 2.1 Run modes
 
@@ -156,7 +159,35 @@ Every API route is under `/api`, has no authentication and passes through the mi
 | `GET /api/statistics` | none | Totals (all, per website status, with a phone, called, interested, converted) and the category breakdown of potential clients. | Dashboard |
 | `GET *` (production mode only) | none | A file from `client/dist`, otherwise `index.html`. | The browser |
 
-The routes with the largest effect are `GET /api/settings`, which returns the stored credentials; the two business and session `DELETE` routes, which cannot be undone; an export without `businessIds`, which returns the whole database; and `generate-site`, which spends Google, Gemini and Vercel quota and publishes a page. The search-history routes exist only as API: the client has no screen that lists or deletes sessions.
+The routes with the largest effect are `GET /api/settings`, which returns the stored credentials; the two business and session `DELETE` routes, which cannot be undone; an export without `businessIds`, which returns the whole database; and `generate-site`, which spends Google, Gemini and Vercel quota and publishes a page. `generate-site` is also the only route that does its full work on a request with no body, so a browser can send it cross-site as a CORS "simple request" without a preflight; [5.13](#513-local-only-security-model) explains why the Origin guard, not CORS, is what stops that. The search-history routes exist only as API: the client has no screen that lists or deletes sessions.
+
+### 2.3 Configuration reference
+
+**Environment variables.** [`server.ts`](../server/src/server.ts) calls `dotenv.config()`, which reads `.env` from the working directory. The npm scripts start the server inside `server/`, so the file is `server/.env` ([`.env.example`](../server/.env.example) lists the variables). Prisma's CLI reads the same file.
+
+| Variable | Default in code | Read by | Effect |
+| --- | --- | --- | --- |
+| `DATABASE_URL` | none: required by [`schema.prisma`](../server/prisma/schema.prisma) | Prisma | SQLite connection string. `.env.example` sets `file:./dev.db`. Prisma resolves a relative SQLite path against the schema file, so the database is `server/prisma/dev.db`. |
+| `GOOGLE_MAPS_API_KEY` | empty | [`places.ts`](../server/src/routes/places.ts), [`PlacesService.search`](../server/src/services/placesService.ts), the `generate-site` route | Read from `process.env` on each request; the `.env` file itself is loaded once, at start. Empty means demo mode ([5.7](#57-demo-mode-vs-real-mode)); whitespace only means a 400 when the demo toggle is off. The demo-site flow skips its Google calls without it. It is never sent to the browser. |
+| `HOST` | `127.0.0.1` | `server.ts` | Interface the API listens on ([5.13](#513-local-only-security-model)). |
+| `PORT` | `3001` | `server.ts` | API port. The Vite proxy target `http://127.0.0.1:3001` is hard-coded in [`vite.config.ts`](../client/vite.config.ts), so a different port also needs that file changed. |
+| `ALLOWED_HOSTS` | empty | [`parseAllowedHosts`](../server/src/utils/localOnly.ts) | Comma-separated host names, trimmed and lowercased, accepted in addition to the loopback names in both `Host` and `Origin`. |
+| `NODE_ENV` | unset | [`app.ts`](../server/src/app.ts), [`db.ts`](../server/src/db.ts) | `production` makes the API serve `client/dist` itself ([2.1](#21-run-modes)). `development` turns on Prisma query and warning logs. No npm script sets it. |
+
+**Settings stored in the database.** The `AppSettings` row ([4](#4-data-model)) holds what the Settings page edits, validated by [`SettingsUpdateSchema`](../server/src/schemas/validation.ts): `dailyMaxSearches` (1 to 1000, default 100), `maxCategoriesPerSearch` (1 to 50, default 10), `maxBusinessesPerSearch` (1 to 1000, default 100, not enforced), `isDemoMode`, `geminiApiKey` (one or more keys separated by commas or newlines) and `vercelToken`. Each request reads the row again, so changes apply at once.
+
+**In the browser.** The client keeps the last location in `localStorage` under `user_location` ([`App.tsx` `App`](../client/src/App.tsx)). Every page that sends `lat`/`lng` uses it.
+
+**Fixed in code, with no setting:**
+
+| Value | Where |
+| --- | --- |
+| CORS origin `http://localhost:5173`, client dev port 5173 | [`app.ts`](../server/src/app.ts), [`vite.config.ts`](../client/vite.config.ts) |
+| Rate limit: 100 requests per 60 s per `req.ip` | `simpleRateLimiter` in [`app.ts`](../server/src/app.ts) |
+| JSON body limit: Express's default of 100 kB | `express.json()` in [`app.ts`](../server/src/app.ts) |
+| Scan: one request per category, 5 in flight, 20 results each, 10 s timeout | [`PlacesService.searchGoogle`](../server/src/services/placesService.ts) |
+| Demo site: up to 4 photos at 800 px, 3 Gemini models × 2 attempts per key, no request timeouts | [`routes/businesses.ts`](../server/src/routes/businesses.ts), [`AIWebsiteService.generateHtml`](../server/src/services/aiWebsiteService.ts) |
+| Desktop file name and folders | [`logToDesktop`](../server/src/utils/desktopLogger.ts) |
 
 ## 3. Main runtime flows
 
@@ -286,11 +317,23 @@ erDiagram
         string name
         string primaryType
         string types "JSON array"
+        string formattedAddress
+        float latitude
+        float longitude
+        float rating
+        int userRatingCount
         string websiteUri
         string websiteStatus
+        string nationalPhoneNumber
+        string internationalPhoneNumber
+        string googleMapsUri
+        string businessStatus
+        boolean isOpen
+        datetime createdAt
+        datetime updatedAt
+        datetime lastSeenAt
         string callingStatus "default Henüz aranmadı"
         string searchSessionId FK
-        datetime lastSeenAt
         string demoWebsiteUrl
         string email
         string photos "JSON array"
@@ -333,6 +376,33 @@ The fields that matter:
 | `ExcludedBrand` | `name` | Unique. The seed script adds 11 brands ([`seed.ts` `DEFAULT_CHAIN_BRANDS`](../server/prisma/seed.ts)): Starbucks, McDonald's, Burger King, KFC, Domino's, LC Waikiki, DeFacto, Mavi, FLO, Watsons, Gratis. |
 
 `types`, `categories` and `photos` are JSON arrays stored as text. The API never filters on them, and SQLite has no array type. The list endpoints parse `types` back into an array before responding.
+
+**Every `Business` column.** The diagram lists all 24 columns. This table says where each value comes from and what reads it. "Scan" means the mapping in [`PlacesService.searchGoogle`](../server/src/services/placesService.ts) (or the sample data in demo mode) followed by the upsert in [`PlacesService.search`](../server/src/services/placesService.ts), which writes the column on both create and update unless noted.
+
+| Column | Type | Written by | Notes |
+| --- | --- | --- | --- |
+| `id` | String, primary key | Scan, on create | Google Place ID. |
+| `name` | String | Scan | `displayName.text`, or `İsimsiz İşletme` when Google sends none. |
+| `primaryType` | String, nullable | Scan | Google's `primaryType`, else the first of `types`, else `store`. A scan therefore never stores `NULL`. Shown as the category; also the `category` of the demo-site prompt. |
+| `types` | String (JSON array) | Scan | All Google types of the place. |
+| `formattedAddress` | String, nullable | Scan | An empty string when missing, not `NULL`. Searched by the list's text filter; its last token is the "city" of the e-mail lookup. |
+| `latitude`, `longitude` | Float | Scan | Required: places without coordinates are dropped before storing. Used for distance and map markers. |
+| `rating` | Float, nullable | Scan | `NULL` when Google sends none. The "highest rating" sort uses it. |
+| `userRatingCount` | Int, nullable | Scan | `NULL` when Google sends none or 0. The "most reviews" and "least reviews" sorts use it. |
+| `websiteUri` | String, nullable | Scan | The only input of the website classification ([5.2](#52-deciding-that-a-business-has-no-website)). |
+| `websiteStatus` | String | Scan | `no_website`, `social_media_only` or `has_website`. |
+| `nationalPhoneNumber`, `internationalPhoneNumber` | String, nullable | Scan | Either one counts as "has a phone". |
+| `googleMapsUri` | String, nullable | Scan | The Maps links in the results list and on the map, the export column "Google Maps Linki", and the directions button of the demo-site prompt. |
+| `businessStatus` | String, nullable | Scan | Google's status (the demo data uses `OPERATIONAL`). Stored only: no filter or screen reads it. |
+| `isOpen` | Boolean, nullable | Scan | `regularOpeningHours.openNow` **at the time of the scan**, `NULL` without opening hours. Only the scan's "open now" filter uses it; no screen shows it. |
+| `createdAt` | DateTime | Database default, on create | When the business was first stored. The "newest" sort and the export column "Bulunma Tarihi" use it. |
+| `updatedAt` | DateTime | Prisma `@updatedAt` | Changes on every update: a rescan, a CRM change or a demo-site run. Nothing reads it. |
+| `lastSeenAt` | DateTime | Default on create; scan update | When a scan last returned the business. Nothing reads it. |
+| `callingStatus` | String | Default on create; `PATCH` | One of 11 CRM statuses ([5.8](#58-crm-call-tracking-statuses-groups-and-transitions)). A rescan never changes it. |
+| `searchSessionId` | String, nullable, foreign key | Scan, on create only | The scan that first found the business. |
+| `email` | String, nullable | `generate-site` | A found address or `Bulunamadı`. |
+| `demoWebsiteUrl` | String, nullable | `generate-site` | URL of the newest demo site. |
+| `photos` | String (JSON array), nullable | Scan (always `NULL`, see [8](#8-limitations-known-gaps-and-next-steps)); `generate-site` caches Place Details photos | The Google photo references the demo-site flow downloads. |
 
 ## 5. Core logic in depth
 
@@ -537,6 +607,15 @@ The list option "hide already processed" (`excludeExisting=true`) means *status 
 
 Distance is computed at read time with the Haversine formula ([`distance.ts` `calculateDistance`](../server/src/utils/distance.ts), Earth radius 6371000 m), from the `lat`/`lng` the client sends. The client sends the last location the user set, which a scan updates to its centre. The sort options are closest, furthest, highest rating, most reviews, least reviews and newest. Without `sortBy`, the list is sorted by distance when coordinates are present and by newest otherwise. The server returns every matching row.
 
+**Map view.** [`MapView.tsx` `MapView`](../client/src/pages/MapView.tsx) is a second reader of the same list endpoint:
+
+- It requests `GET /api/businesses?status=all_website_less`, plus `lat` and `lng` when a location is saved. No CRM, phone or text filter is sent, so the map shows every potential client whatever its call status, and never a business that has a website.
+- It loads when the page opens, again when the saved location changes, and when the user presses "Yenile" ("refresh").
+- The map is Leaflet with OpenStreetMap tiles at zoom 13. It is centred on the saved location, or on a fixed point in central Ankara when none is saved. The saved location gets its own pulsing marker.
+- Every business gets one marker at its stored coordinates. There is no clustering, so a dense area shows overlapping pins.
+- A marker's popup shows the name, the category, the address, the phone as a `tel:` link with spaces removed, the rating and review count (shown as 0 when missing) and the distance (in metres below 1 km, otherwise in km with one decimal). An "Haritalarda Aç" ("open in Maps") button opens the stored `googleMapsUri` after [`safeExternalUrl`](../client/src/utils/safeUrl.ts) has checked it.
+- Without a saved location the server returns a distance of 0 for every business, so every popup says "0 m".
+
 ### 5.11 CSV and XLSX export, with formula neutralization
 
 Both exports load the requested IDs with their notes and map `websiteStatus` to Turkish text.
@@ -567,8 +646,8 @@ The rows of both exports come back in database order, not in the order of the on
    - Any failure returns `Bulunamadı`.
 3. **Photos.**
    - It uses the cached `photos` JSON. If that is empty and a Google key exists, it calls Place Details with `fields=photos` and caches the result.
-   - It then downloads **up to 4** photos (`maxWidthPx=800`) as base64, named `photo-1.jpg` to `photo-4.jpg`.
-   - Failures are logged and skipped.
+   - If a Google key exists, it then downloads **up to 4** photos (`maxWidthPx=800`) one after another, as base64. Each file is named by its position in Google's list: the *i*-th photo becomes `photo-i.jpg`.
+   - A failed download (a non-OK response or a network error) is logged and skipped, and the later photos keep their numbers. What that does to the page is explained under "Photo numbering after a failed download" below.
 4. **Reviews.** It calls Place Details with `fields=reviews&languageCode=tr` and keeps reviews with rating ≥ 4 and more than 10 characters of text. The review texts are **not** sent to Gemini. They are only used in post-processing (step 7.4).
 5. **Prompt construction**, in [`AIWebsiteService.generateHtml`](../server/src/services/aiWebsiteService.ts). One long instruction text, mostly in Turkish, holds:
    - the business name, category, address, phone, rating and review count;
@@ -587,7 +666,7 @@ The rows of both exports come back in database order, not in the order of the on
    - **Any other error:** it waits 1 s and retries.
    - **Nothing worked:** [`buildFallbackHtml`](../server/src/services/aiWebsiteService.ts) builds a local template. It escapes every business value through [`escapeHtml`](../server/src/utils/html.ts), [`safeHttpUrl`](../server/src/utils/html.ts) and [`sanitizePhone`](../server/src/utils/html.ts).
 
-   The worst case is *keys × 3 × 2* calls. Gemini being unavailable never fails the request.
+   The worst case is *keys × 3 × 2* calls, plus the sleeps measured under "Latency, timeouts and cancellation" below. Gemini being unavailable never fails the request.
 7. **Post-processing**, applied to Gemini output and the template alike:
    1. Strip a leading ` ```html ` or ` ``` ` fence and a trailing ` ``` `.
    2. Rewrite every reference to `photo-N` / `photo_N` / `photoN` whose number is higher than the count actually downloaded to a fallback image for the business type. `getCategoryKey` derives the type by keyword search over the category and name.
@@ -602,6 +681,30 @@ The rows of both exports come back in database order, not in the order of the on
 9. **Record.**
    - [`logToDesktop`](../server/src/utils/desktopLogger.ts) appends name, phone, e-mail, URL and date to `potansiyel-musteriler.txt`. The file goes in the first existing folder among `~/Desktop`, `~/OneDrive/Masaüstü`, `~/OneDrive/Desktop` and `~/Masaüstü`. If that write fails, it goes to the server's working directory.
    - Finally the business gets `email`, `demoWebsiteUrl` and an automatic note. `demoWebsiteUrl` is overwritten with the newest URL. Earlier URLs survive only in the earlier automatic notes and in the Desktop file.
+
+**Photo numbering after a failed download.** Three parts of the flow count the photos in different ways, and they agree only when every download succeeds:
+
+- **The route** names each file by its position in Google's list and does not renumber after a failure. If the second of four downloads fails, the deployment contains `photo-1.jpg`, `photo-3.jpg` and `photo-4.jpg`.
+- **The prompt** tells Gemini how many photos it received (here 3) and to use only `./photo-1.jpg` to `./photo-N.jpg`, that is `photo-1` to `photo-3`. The attached images carry no file names, so Gemini can only match them by position: the second image it sees is the content of `photo-3.jpg`. Its choices per photo, such as leaving out a photo with people in it, can therefore apply to the wrong file.
+- **Post-processing** (step 7.2) rewrites only numbers *above* the downloaded count. With a count of 3 it replaces references to `photo-4` with an Unsplash image, although `photo-4.jpg` was deployed, and keeps references to `photo-2`, although that file does not exist.
+
+A run of `generateHtml` with a stubbed Gemini answer that used `photo-1` to `photo-4`, and with the three files above, confirmed this: the result kept `./photo-1.jpg`, `./photo-2.jpg` and `./photo-3.jpg` and had replaced `./photo-4.jpg`. The fallback template counts the same way. Its service-card images carry an `onerror` handler that swaps in an Unsplash image, so a missing `photo-2.jpg` is covered there. Its hero image is `./photo-1.jpg` whenever at least one photo downloaded and has no such handler, so the hero is broken when the *first* download failed. In Gemini's HTML, a missing file recovers only if Gemini followed the prompt's instruction to put an `onerror` fallback on every `<img>`.
+
+**Latency, timeouts and cancellation.** The route answers only after every step has finished, and the steps run one after another. Before Gemini there are up to 7 outbound calls: the DuckDuckGo search, Place Details for photos, 4 photo downloads and Place Details for reviews. After it come 2 Vercel calls: the deployment and the domain lookup.
+
+- **No timeouts.** Only the scan's Places requests have one (10 s, [5.1](#51-the-search-pipeline-categories-fan-out-and-result-limits)). None of the calls here sets a timeout, so each one is limited only by the defaults of Node's built-in `fetch`. Measured on Node 22: a request to a server that accepted the connection but never answered failed after about 300 s, when the wait for response headers ran out. Each of the calls above can wait that long.
+- **Fixed sleeps in the Gemini loop.** Measured with a stubbed `fetch` that answered at once:
+
+  | Keys | Every Gemini response | Calls | Time spent sleeping |
+  | --- | --- | --- | --- |
+  | 1 | 429 or 503 | 6 | 18 s (2 s, then 4 s, per model) |
+  | 1 | Any other error, including 400 and 401 | 6 | 6 s (1 s per failed attempt) |
+  | 2 | 429 or 503 | 6 | 0 s (one call per key and model) |
+  | 2 | Any other error | 12 | 12 s |
+
+  In general the loop makes at most *keys × 3 × 2* calls and sleeps at most 18 s with one key, or *keys × 6* s with several. With several keys a 400 or 401 is handled like a 429. The time of the calls themselves comes on top. A successful call generates a whole HTML page, and the code puts no limit on how long that takes.
+- **No client timeout.** The client's `fetch` has none either, so the button's spinner turns until the server answers.
+- **No cancellation.** The client passes no abort signal, and the server does not watch for the connection closing. Leaving the page or closing the browser does not stop a run that has started: the site is still deployed, and the note and the Desktop entry are still written.
 
 **Offer templates.** Once `demoWebsiteUrl` exists, the lead detail modal in [`Businesses.tsx`](../client/src/pages/Businesses.tsx) offers an e-mail and a WhatsApp message, each with a send button and a copy button:
 
@@ -625,7 +728,7 @@ The tool stores API credentials and CRM data and has no login. Its security mode
 
 1. **Bind address.** [`server.ts`](../server/src/server.ts) listens on `HOST`, which defaults to `127.0.0.1`. Other machines cannot connect unless the user changes it.
 2. **Host guard (DNS rebinding).** [`localOnly`](../server/src/utils/localOnly.ts) parses the `Host` header with `URL` (IPv6 brackets removed, lowercased). It accepts only `localhost`, `127.0.0.1`, `::1` or a name listed in `ALLOWED_HOSTS`, and answers anything else with **403**. A malicious site whose DNS name resolves to `127.0.0.1` still sends its own name as `Host`, so it is rejected.
-3. **Origin guard (CSRF).** When an `Origin` header is present, its hostname must pass the same check. `Origin: null`, sent by sandboxed iframes and `file://` pages, fails to parse and is rejected. A request without `Origin` (curl, same-origin GET) passes. CORS is set to `http://localhost:5173` only. But CORS only controls whether a browser may *read* a response, not whether the request is *sent*, so the Origin guard is what actually blocks cross-site writes.
+3. **Origin guard (CSRF) and CORS.** When an `Origin` header is present, its hostname must pass the same check, or the guard answers 403. `Origin: null`, which browsers send from sandboxed iframes and `file://` pages among others, fails to parse and is rejected. A request without `Origin` (curl, a same-origin GET) passes. After the guard, the `cors` middleware allows only the origin `http://localhost:5173`, the methods GET, POST, PATCH, DELETE and OPTIONS, and the request header `Content-Type`. The two layers stop different requests, as explained below this list.
 4. **Rate limiting.** `simpleRateLimiter` in [`app.ts`](../server/src/app.ts) is an in-memory fixed window: 100 requests per 60 s per `req.ip`, then **429**. `trust proxy` is not set and the Vite proxy connects from loopback, so in practice this is one global budget for the single user. It protects against a runaway loop, not against an attacker.
 5. **Validation and error responses.**
    - Request bodies are parsed with Zod schemas. Query strings go through `buildBusinessWhere`, which ignores unexpected values.
@@ -633,7 +736,42 @@ The tool stores API credentials and CRM data and has no login. Its security mode
    - The final [`jsonErrorHandler`](../server/src/utils/httpErrors.ts) turns body-parser failures into 400 (malformed JSON) or 413 (too large), other 4xx into a short message, and everything else into a generic 500. Without it, Express would send its HTML error page with the stack trace and absolute paths.
 6. **Output encoding.** These steps are described above: CSV neutralization in [5.11](#511-csv-and-xlsx-export-with-formula-neutralization), and HTML escaping for the template and reviews in [5.12](#512-demo-site-generation). The client renders third-party links only through [`safeExternalUrl`](../client/src/utils/safeUrl.ts), which allows absolute `http:`/`https:` URLs and nothing else.
 
+#### Simple requests, preflights and what each layer stops
+
+Under the Fetch standard, a browser sends an `OPTIONS` **preflight** before a cross-origin request that uses a method other than GET, HEAD or POST, a `Content-Type` other than `application/x-www-form-urlencoded`, `multipart/form-data` or `text/plain`, or another header outside the CORS safelist. If the preflight fails, the browser never sends the real request. A **simple request** gets no preflight: the browser sends it, and CORS only decides whether the page may read the response. An HTML form or a `fetch` in `no-cors` mode can send only simple requests. The browser adds an `Origin` header to every cross-origin request except a GET or HEAD in `no-cors` mode, such as an `<img>` or `<script>` tag. The value is the page's origin or `null`.
+
+For a page on another website, that gives three cases:
+
+| Request from a foreign page | What stops it | Routes, and what the request does once it gets through |
+| --- | --- | --- |
+| **Preflighted**: every `PATCH` and `DELETE`, and a `POST` with `Content-Type: application/json` as the client sends it | The preflight fails. The guard answers it with 403. Without the guard, CORS alone would also stop it, because `Access-Control-Allow-Origin: http://localhost:5173` would not match the page's origin. | `PATCH /api/businesses/:id`, `PATCH /api/settings`, every `DELETE` route, and the `POST` routes with a JSON body. |
+| **Simple `POST`**: no body, or a form or plain-text body | **Only the guard (403).** CORS does not stop the request from being sent. | `POST /api/businesses/:id/generate-site` needs no body, so this request does its full work: it spends Google, Gemini and Vercel quota, publishes a public page, and writes a note and a Desktop entry. For every other `POST`, `express.json()` leaves a non-JSON body unparsed and the route sees `{}`: the search and excluded-brands routes answer 400, and the two exports export the whole database to a response the page cannot read. |
+| **`no-cors` `GET`**: an `<img>` or `<script>` tag | Nothing. The request carries no `Origin` header, so the guard lets it through. | Every `GET` route. The page cannot read the response. The routes only read, except that `GET /api/settings` creates the default settings row when it is missing. |
+
+So for `generate-site`, the one route that a bodiless cross-site POST can trigger in full, the Origin guard is the protection that matters. The business ID in its path is a Google Place ID, which is public data, not a secret.
+
+Checked against the real app on an empty scratch database, with the headers set by hand from Node:
+
+- An `OPTIONS` preflight with `Origin: https://evil.example` got 403.
+- A bodiless `POST` to `generate-site` with that origin, or with `Origin: null`, got 403. Without `Origin` it reached the route and got 404 for the unknown ID.
+- A `POST /api/places/search` with `Content-Type: text/plain` got 400 from the Zod validation.
+- A `POST /api/businesses/export/csv` with `Content-Type: text/plain` and no `Origin` got 200 with the full CSV.
+
+**The remaining gap is another port on `localhost`.** The guard compares host names, while CORS compares the full origin, including the port. A page served from, for example, `http://localhost:4000` passes the guard. Its preflight got 204 with `Access-Control-Allow-Origin: http://localhost:5173`. That does not match, so the browser stops its preflighted writes and hides every response from it. Its simple requests still run: a bodiless `POST` to `generate-site` with `Origin: http://localhost:4000` reached the route in the same test.
+
+#### Credentials
+
 The Google key lives in `server/.env` and never reaches the browser. The Gemini key(s) and the Vercel token, however, are stored in plain text in SQLite, and `GET /api/settings` returns them to the UI. This is acceptable only because of the layers above.
+
+### 5.14 Concurrency
+
+The server is one Node.js process. Requests interleave at every `await`, and SQLite runs one write transaction at a time. Apart from the scan lock, the server has no locks, version columns or "in progress" markers. What that means per operation:
+
+- **Scans.** The serial queue ([5.6](#56-cost-limits-and-the-serial-queue)) covers only the reservation: the count and the insert of the `SearchSession`. The Google requests and the upsert transaction run outside it, so two reserved scans can run at the same time. Each scan's upserts form one transaction. When both return a place that is already stored, the transaction that commits last decides its Google fields. Neither touches the CRM fields.
+- **Demo-site generation has no guard.** Inside one page, every generate button is disabled while one of that page's requests runs (`generatingSiteId !== null` in [`Businesses.tsx`](../client/src/pages/Businesses.tsx) and [`CRMTracking.tsx`](../client/src/pages/CRMTracking.tsx)). That state belongs to the page component, though, and [`App`](../client/src/App.tsx) renders only the active tab. Switching from the Businesses page to the CRM page unmounts the first page while its request keeps running ([5.12](#512-demo-site-generation)), and the CRM page's buttons are enabled again. A second run for the same business then goes through the whole pipeline in parallel: it repeats every outbound call, creates a second Vercel project, and writes a second Desktop entry and a second automatic note. `demoWebsiteUrl` ends up with the URL of whichever run finishes last. Two direct API calls behave the same way.
+- **CRM updates are last write wins.** `PATCH /api/businesses/:id` is a plain `update` with no version check, so of two concurrent status changes the later one stays. Notes are inserts, so every note survives. The final update of `generate-site` writes only `email`, `demoWebsiteUrl` and a note, so it never overwrites a status that was changed while it ran.
+- **Settings** are an upsert, also last write wins. A change applies to the next request that reads the row; a running `generate-site` keeps the keys it read at its start.
+- **A scan and a demo-site run on the same business** can overlap. The scan's update writes `photos: null` (see [8](#8-limitations-known-gaps-and-next-steps)), which can clear the photo list that the run has just cached. The run itself is not affected, because it already holds the list in memory.
 
 ## 6. Design decisions and trade-offs
 
@@ -648,7 +786,8 @@ The Google key lives in `server/.env` and never reaches the browser. The Gemini 
 | **Fall back to demo mode when no key is set** | A fresh checkout runs at once, and a missing key never causes a billed call. | A whitespace key is reported as an error instead, so a broken key is not mistaken for demo mode. |
 | **Gemini failure falls back to a local template (fail open), Vercel failure fails the request** | Generation should still produce something. A site that was not deployed must not be recorded as deployed. | Gemini costs are spent even when the deploy then fails. |
 | **A new, randomly suffixed Vercel project per generation** | With a 5-character random suffix, two generations practically never share a project name, even for businesses with the same name, and no lookup of earlier projects is needed. | Old sites are never replaced or removed, so they pile up in the Vercel account ([5.12](#512-demo-site-generation)). |
-| **No authentication, local-only network model** | A single-user desktop tool. Host/Origin checks cover the realistic browser attacks (DNS rebinding, CSRF) on a loopback service. | Must never be exposed to a network. Any local process can still call the API. |
+| **No authentication, local-only network model** | A single-user desktop tool. The Host check covers DNS rebinding. The Origin check covers cross-site requests, including the simple requests that CORS cannot stop ([5.13](#513-local-only-security-model)). | Must never be exposed to a network. Any local process can still call the API, and because the Origin check ignores the port, a page on another `localhost` port can send simple requests. |
+| **Demo-site generation as one synchronous request** | One call returns the updated business, with no job table, queue or polling. | No timeouts, no cancellation and no guard against a second run for the same business. A run can take minutes ([5.12](#512-demo-site-generation), [5.14](#514-concurrency)). |
 | **Statuses stored as Turkish labels (plain strings)** | The UI, filters, exports and the database share one vocabulary, so no mapping layer is needed. | Renaming a label needs a data migration. The database has no constraint, only the API enum. |
 | **Distance computed on read, not stored** | Distance depends on the viewer's current location, not on the scan. | The whole result set is loaded and sorted in memory. Fine for a personal database. |
 | **CSV prefixing with a phone-number exception** | Blocks formula injection and keeps phone columns readable. | Phone-like values that start with `+` or `-` are not prefixed. They cannot call functions. |
@@ -707,7 +846,9 @@ Known gaps, verified in the code:
 - **Large exports exceed the JSON body limit.** `express.json()` runs with its default limit of 100 kB (102,400 bytes), while `ExportRequestSchema` allows 10,000 IDs. Against the real app, an export body with 3,000 IDs of 27 characters (90,017 bytes) got 200, and one with 3,500 (105,017 bytes) got 413. With 27-character IDs, exporting a list of more than about 3,400 businesses therefore fails.
 - **Permanently closed businesses can appear as leads**, because `businessStatus` is stored but not filtered.
 - **The e-mail lookup is a heuristic.** It takes the first address found on a DuckDuckGo result page, and `city` is just the last token of the address, so it can return an unrelated address.
-- **The Origin guard checks the hostname, not the port.** Any page served from `localhost` on another port passes it.
+- **The Origin guard checks the hostname, not the port.** Any page served from `localhost` on another port passes it. CORS still stops that page's preflighted requests and hides every response from it, but its simple requests run, including a bodiless `POST` to `generate-site` ([5.13](#513-local-only-security-model)).
+- **Demo-site generation has no timeouts, no cancellation and no duplicate guard.** Only the scan's Places requests have a timeout. A started run cannot be stopped, and a second run for the same business, for example from the CRM page after leaving the Businesses page, creates a second Vercel project and a second note ([5.12](#512-demo-site-generation), [5.14](#514-concurrency)).
+- **Photo file names drift after a failed download.** Files keep their position in Google's list, while the prompt and the post-processing assume `photo-1` to `photo-N` with no gaps. A reference to a missing file stays, while references to the highest-numbered files that did download are replaced by stock images ([5.12](#512-demo-site-generation)).
 - **"Max businesses per search" is not enforced**, and nothing reads `lastSeenAt`.
 - **No pagination beyond 20 places per category per scan.** See [5.1](#51-the-search-pipeline-categories-fan-out-and-result-limits).
 - **Exports keep database order**, and "Son Aranma Tarihi" in the XLSX is the newest note date, which may be the automatic demo-site note.
@@ -727,6 +868,9 @@ Natural next steps:
 10. Move the sender identity of the offer templates into Settings.
 11. Raise the body limit for exports, or send the active filter instead of the list of IDs.
 12. Drop ordinary-word brands from the seed list, or report which places the chain filter skipped.
+13. Number the downloaded photos by their position among the successful downloads, so that file names, prompt and post-processing agree.
+14. Give the outbound calls of `generate-site` timeouts, and refuse a second run for a business while one is in progress.
+15. Compare the full origin, port included, in the Origin guard, or make `generate-site` require a JSON body so that browsers always preflight it.
 
 ## 9. Code tour
 
@@ -778,7 +922,9 @@ Read the files in this order:
 | Production mode | `NODE_ENV=production`: the API also serves the built client on port 3001. |
 | Formula injection | A spreadsheet cell starting with `=`, `+`, `-` or `@` being executed as a formula when a CSV is opened. |
 | DNS rebinding | An attack where a foreign domain resolves to `127.0.0.1` so that a browser page can reach a local service. It is blocked by the Host check. |
-| CSRF | A foreign web page making the browser send a request to this API. It is blocked by the Origin check. |
+| CSRF | A foreign web page making the browser send a request to this API. Preflighted requests are stopped by the Origin check and by CORS; simple requests only by the Origin check. |
+| Preflight | The `OPTIONS` request a browser sends before a cross-origin request with a non-simple method, content type or header. If it fails, the real request is not sent. |
+| Simple request | A cross-origin GET, HEAD or POST with only safelisted headers and a form or plain-text body (or none). The browser sends it without a preflight; CORS only hides the response. |
 | Fallback template | The locally built, escaped demo site used when Gemini returns nothing. |
 
 ---
@@ -787,10 +933,12 @@ Read the files in this order:
 
 Eksik Web, kendi bilgisayarında çalışan, tek kullanıcılı bir potansiyel müşteri bulma ve CRM aracıdır. Seçilen konum çevresinde, seçilen her kategori için Google Places API (New) Nearby Search'e bir istek atar. İstekler en fazla 5'i aynı anda olacak şekilde gruplar halinde ve 10 sn zaman aşımıyla gider; her istek en fazla 20 sonuç döner ve sayfalama yoktur. Her işletme, Google'ın döndürdüğü `websiteUri` alanına bakılarak "web sitesi yok", "sadece sosyal medya" (8 alan adı) veya "web sitesi var" olarak sınıflandırılır. Alan maskesinde `websiteUri`, telefon, puan ve çalışma saatleri bulunduğu için Google her kategori isteğini Nearby Search Enterprise seviyesinden ücretlendirir; maliyet işletme başına değil, istek başınadır. Ardından zincir marka, açık olma, telefon, puan ve yorum filtreleri uygulanır. İşletmeler Google Place ID ile tek bir transaction içinde upsert edilir; böylece arama durumu, notlar, e-posta ve demo site adresi sonraki taramalarda korunur. Buna karşılık "Listeden Çıkar" düğmesi işletmeyi notlarıyla birlikte kalıcı olarak siler ve sonraki tarama onu yeni bir kayıt olarak geri getirir. Gerçek taramalarda kategori sınırı (varsayılan 10) ve günlük tarama sınırı (varsayılan 100) uygulanır. Tarama Google çağrılmadan önce `RUNNING` durumunda ve istek sayısı ayrılmış olarak kaydedilir; sayım ile kayıt tek bir sıra (kilit) altında çalışır. Böylece başarısız taramalar da sayılır ve aynı anda başlayan iki tarama limiti birlikte aşamaz.
 
-CRM'de 11 arama durumu vardır, ancak bir geçiş tablosu yoktur: API her durumdan her duruma geçişe izin verir ve geçmiş yalnızca notlarda tutulur. CSV dışa aktarmada formül gibi başlayan hücrelerin başına `'` eklenir; XLSX hücreleri ise metin hücresi olarak yazılır. Deneysel demo site oluşturucu Gemini ile HTML üretir (olmazsa kaçışlı yerel şablon kullanır) ve Vercel'e yükler. Gemini'ye yalnızca işletme bilgileri ve en fazla 4 Google fotoğrafı gider; 4–5 yıldızlı yorumlar sonradan kaçışlı bir carousel olarak eklenir. Gemini çıktısı kontrol edilmeden yayınlanır ve uydurma içerik barındırabilir. Her üretim yeni bir Vercel projesi oluşturur ve eski siteler silinmez. E-posta ve WhatsApp teklif şablonları, yazarın adıyla istemci koduna sabit yazılmıştır. Güvenlik modeli tamamen yereldir: 127.0.0.1'e bağlanma, Host/Origin kontrolü, istek sınırı ve yığın izi içermeyen JSON hata yanıtları.
+CRM'de 11 arama durumu vardır, ancak bir geçiş tablosu yoktur: API her durumdan her duruma geçişe izin verir ve geçmiş yalnızca notlarda tutulur. CSV dışa aktarmada formül gibi başlayan hücrelerin başına `'` eklenir; XLSX hücreleri ise metin hücresi olarak yazılır. Deneysel demo site oluşturucu Gemini ile HTML üretir (olmazsa kaçışlı yerel şablon kullanır) ve Vercel'e yükler. Gemini'ye yalnızca işletme bilgileri ve en fazla 4 Google fotoğrafı gider; 4–5 yıldızlı yorumlar sonradan kaçışlı bir carousel olarak eklenir. Gemini çıktısı kontrol edilmeden yayınlanır ve uydurma içerik barındırabilir. Her üretim yeni bir Vercel projesi oluşturur ve eski siteler silinmez. E-posta ve WhatsApp teklif şablonları, yazarın adıyla istemci koduna sabit yazılmıştır. Güvenlik modeli tamamen yereldir: 127.0.0.1'e bağlanma, Host/Origin kontrolü, istek sınırı ve yığın izi içermeyen JSON hata yanıtları. Tarayıcı, siteler arası PATCH, DELETE ve JSON gövdeli POST isteklerinden önce bir ön kontrol (preflight) gönderir; bu istekleri hem Origin kontrolü hem CORS durdurur. Gövdesiz `POST /api/businesses/:id/generate-site` ise ön kontrol gerektirmeyen bir "basit istek"tir ve kota harcayıp herkese açık bir sayfa yayınladığı halde onu yalnızca Origin kontrolü durdurur. Demo site isteği eşzamanlıdır: Places taraması dışındaki dış çağrılarda zaman aşımı yoktur, başlatılan iş iptal edilemez ve aynı işletme için ikinci bir üretimi engelleyen bir kilit yoktur.
 
 - **Mimari:** React + Vite istemci, Express + Prisma + SQLite sunucu. İş kuralları test edilebilir saf fonksiyonlar olarak `server/src/utils/` altındadır. Geliştirmede Vite 5173 portundan API'ye proxy yapar; `NODE_ENV=production` ile API derlenmiş arayüzü 3001 portundan kendisi sunar.
-- **API:** Bölüm 2.2 tüm uç noktaları listeler. Tarama geçmişi (`/api/sessions`) yalnızca API üzerinden erişilebilir; arayüzde karşılığı yoktur.
+- **API ve yapılandırma:** Bölüm 2.2 tüm uç noktaları, Bölüm 2.3 ortam değişkenlerini (`DATABASE_URL`, `GOOGLE_MAPS_API_KEY`, `HOST`, `PORT`, `ALLOWED_HOSTS`, `NODE_ENV`), veritabanındaki ayarları ve koda sabit yazılmış değerleri listeler. Tarama geçmişi (`/api/sessions`) yalnızca API üzerinden erişilebilir; arayüzde karşılığı yoktur.
+- **Veri modeli:** Bölüm 4, `Business` tablosunun 24 sütununun hepsini, kaynağını ve onu okuyan yeri verir. `isOpen` tarama anındaki "şu an açık" bilgisidir; `businessStatus`, `updatedAt` ve `lastSeenAt` saklanır ama okunmaz.
+- **Harita:** Harita sayfası, kayıtlı konumla birlikte tüm potansiyel müşterileri (`all_website_less`, CRM durumundan bağımsız) yükler ve her işletme için bir işaret gösterir; açılır pencerede `tel:` bağlantısı, puan, mesafe ve Google Haritalar bağlantısı bulunur.
 - **"Web sitesi yok" kararı:** Yalnızca Google'ın `websiteUri` alanına dayanır; site taranmaz. Link-in-bio ve site oluşturucu adresleri "web sitesi var" sayılır.
 - **Zincir filtresi:** Türkçe harf ve kesme işareti normalizasyonundan sonra tam kelime eşleşmesi yapılır ("FLO", "Floransa"yı gizlemez). Ancak sıradan kelime olan markalar (`Mavi`, `Gratis`) "Mavi Kuaför" gibi bağımsız işletmeleri de gizler ve "zincirleri hariç tut" seçeneği varsayılan olarak açıktır.
 - **Demo modu:** Ayarlardan açıldığında ya da API anahtarı olmadığında 15 örnek mekânla çalışır, limit uygulanmaz.
@@ -805,3 +953,7 @@ CRM'de 11 arama durumu vardır, ancak bir geçiş tablosu yoktur: API her durumd
   - Demo siteler Vercel'de birikir; eski projeler silinmez.
   - Demo site akışının Google çağrıları günlük limite sayılmaz.
   - Yaklaşık 3.400'den fazla kaydın dışa aktarımı 100 kB JSON gövde sınırına takılır.
+  - Origin kontrolü portu karşılaştırmaz: localhost'ta başka bir porttaki sayfa, gövdesiz `generate-site` gibi basit istekleri gönderebilir.
+  - Demo site üretiminde zaman aşımı yoktur (Node 22'de hiç yanıt vermeyen bir sunucuya yapılan istek yaklaşık 300 sn sonra hata verdi); Gemini döngüsü tek anahtarla 18 sn'ye kadar bekleme ekler ve iş iptal edilemez.
+  - Aynı işletme için iki üretim paralel çalışabilir: iki Vercel projesi ve iki not oluşur. CRM güncellemelerinde son yazan kazanır.
+  - Bir fotoğraf indirilemezse dosya adları kayar: eksik dosyaya giden bağlantı kalır, indirilmiş en yüksek numaralı fotoğraflara giden bağlantıların yerine ise hazır görseller konur.
