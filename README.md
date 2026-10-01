@@ -32,13 +32,13 @@ It is built for freelancers and small agencies who sell web design / SEO service
 ## Features
 
 - **Dashboard** — totals for scanned businesses, businesses without a website, called / interested / converted leads and a category breakdown
-- **New scan** — pick a location (browser location, coordinates or a map click), a radius and up to 18 categories, then run a Places Nearby Search (one request per category)
+- **New scan** — pick a location (browser location, coordinates or a map click), a radius and categories from a list of 18, then run a Places Nearby Search (one request per category). A real Google search allows 10 categories by default; the limit can be raised on the Settings page
 - **Results list** — filter by website status, CRM status and phone, search by name or address, sort by distance, rating or review count; export to **CSV** (UTF-8 BOM) or **Excel (.xlsx)**
 - **Map view** — potential clients on an interactive Leaflet map
 - **CRM tracking** — 11 call statuses, a note history per business and ready-made e-mail / WhatsApp offer templates once a demo site exists
 - **Excluded brands** — chain brands (whole-word match) can be hidden so only independent businesses are listed
-- **Demo mode** — works without an API key using built-in sample places (Ankara / Istanbul)
-- **Cost limits** — the daily search limit and the max categories per search from the Settings page are enforced for real Google searches
+- **Demo mode** — works without an API key using built-in sample places (Ankara / Istanbul) with fictional phone numbers and social media handles
+- **Cost limits** — the daily search limit (default 100) and the max categories per search (default 10) from the Settings page are enforced for real Google searches; failed searches count too, and two searches started at the same time cannot both slip past the daily limit
 - **Demo site generator (experimental)** — for a selected business, builds a one-page website with the Gemini API (using its Google photos and 4–5 star reviews; a local template is used when Gemini is unavailable), deploys it to Vercel, looks up a public e-mail address and appends the lead to `potansiyel-musteriler.txt` on the Desktop. The Gemini key(s) and the Vercel token are entered on the Settings page.
 
 ## Screenshots
@@ -173,7 +173,7 @@ Demo mode, the Gemini API key(s) (several keys separated by commas are tried in 
 npm test          # runs the server test suite (Vitest)
 ```
 
-41 tests in 8 files cover the website classifier, distance math, Places search filtering (with Prisma and the Places API mocked), list filters, chain-brand matching, search cost limits, API error responses, the local-only Host/Origin guard, HTML escaping in generated demo sites and CSV formula neutralization. No API key or network access is needed. The live Google, Gemini and Vercel integrations are not covered by automated tests.
+50 tests in 10 files cover the website classifier, distance math, Places search filtering (with Prisma and the Places API mocked), list filters, chain-brand matching (including the ’ apostrophe), search cost limits (including two searches started at once and failed searches), API error responses (including malformed JSON bodies), the local-only Host/Origin guard, HTML escaping in generated demo sites, CSV formula neutralization and the fictional demo-mode data. No API key or network access is needed. The live Google, Gemini and Vercel integrations are not covered by automated tests.
 
 GitHub Actions (`.github/workflows/ci.yml`) runs on every push and pull request: server `tsc --noEmit`, tests and build, migrations and both seed scripts on a throwaway database, and the client production build.
 
@@ -192,8 +192,8 @@ With `NODE_ENV=production` the API also serves `client/dist` itself on port 3001
 
 - The API listens on `127.0.0.1` only and rejects requests whose `Host` header is not a local name (DNS rebinding) or whose `Origin` belongs to another website (CSRF).
 - The Google API key is read from `server/.env` and never sent to the browser. The Gemini key(s) and the Vercel token are stored in plain text in the local SQLite database.
-- Business names, addresses and reviews come from third parties: generated demo sites escape them, external links in the UI only allow `http(s)` URLs, and CSV cells starting with `=`, `+`, `-` or `@` are neutralized.
-- Requests are validated with Zod; error responses carry a short message instead of database error details (those are logged on the server).
+- Business names, addresses and reviews come from third parties: generated demo sites escape them, external links in the UI only allow `http(s)` URLs, and CSV cells starting with `=`, `+`, `-`, `@`, a tab or a carriage return get a leading `'` so spreadsheets do not run them as formulas. Phone-like values (only digits, spaces, parentheses and hyphens, optionally after a leading `+`, e.g. `+90 312 000 00 01`) are deliberately left as they are.
+- Requests are validated with Zod. A malformed JSON body gets a 400 and an error that no route handled gets a generic 500, both as short JSON messages without a stack trace; database error details are only logged on the server. Other error messages, such as those from the Google, Gemini and Vercel APIs, are passed on so you can see why a call failed.
 - HTML written by the Gemini API is published as-is — review a generated site before sending it to a business.
 
 ## Status and roadmap
@@ -226,13 +226,13 @@ Yerel işletmelere web tasarım ve SEO hizmeti satan serbest çalışanlar ve k�
 ### Özellikler
 
 - **Genel Durum Paneli** — taranan işletme, web sitesi olmayan, aranan / ilgilenen / müşteriye dönüşen sayıları ve kategori dağılımı
-- **Yeni Bölge Tarama** — konum (tarayıcı konumu, koordinat veya haritadan seçim), yarıçap ve en fazla 18 kategori seçerek Places Nearby Search (kategori başına bir istek)
+- **Yeni Bölge Tarama** — konum (tarayıcı konumu, koordinat veya haritadan seçim), yarıçap ve 18 kategorilik listeden seçim yaparak Places Nearby Search (kategori başına bir istek). Gerçek Google taramasında varsayılan sınır tarama başına 10 kategoridir; Ayarlar sayfasından artırılabilir
 - **İşletmeler Sonuç Listesi** — web sitesi, CRM durumu ve telefona göre filtreleme, ad/adres araması, mesafe/puan/yorum sayısına göre sıralama; **CSV** (UTF-8 BOM) ve **Excel (.xlsx)** dışa aktarma
 - **Harita Görünümü** — potansiyel müşterilerin Leaflet haritası üzerinde gösterimi
 - **Müşteri Takip Sistemi (CRM)** — 11 arama durumu, işletme başına not geçmişi, demo site üretildikten sonra hazır e-posta / WhatsApp teklif şablonları
 - **Hariç tutulan markalar** — zincir markalar (tam kelime eşleşmesiyle) gizlenebilir
-- **Demo Modu** — API anahtarı olmadan yerleşik örnek mekânlarla (Ankara / İstanbul) çalışır
-- **Maliyet limitleri** — Ayarlar sayfasındaki günlük tarama limiti ve tarama başına kategori limiti gerçek Google taramalarında uygulanır
+- **Demo Modu** — API anahtarı olmadan, kurgusal telefon numaraları ve sosyal medya hesapları olan yerleşik örnek mekânlarla (Ankara / İstanbul) çalışır
+- **Maliyet limitleri** — Ayarlar sayfasındaki günlük tarama limiti (varsayılan 100) ve tarama başına kategori limiti (varsayılan 10) gerçek Google taramalarında uygulanır; başarısız taramalar da sayılır ve aynı anda başlatılan iki tarama günlük limiti birlikte aşamaz
 - **Demo site oluşturucu (deneysel)** — seçilen işletme için Gemini API ile (Google fotoğrafları ve 4–5 yıldızlı yorumlarıyla; Gemini kullanılamazsa yerel şablonla) tek sayfalık site üretir, Vercel'e yükler, herkese açık bir e-posta adresi arar ve kaydı Masaüstündeki `potansiyel-musteriler.txt` dosyasına ekler. Gemini anahtar(lar)ı ve Vercel token'ı Ayarlar sayfasından girilir.
 
 ### Ekran görüntüleri
@@ -242,6 +242,8 @@ Yerel işletmelere web tasarım ve SEO hizmeti satan serbest çalışanlar ve k�
 | ![Web sitesi durumu ve CRM sütunlarıyla sonuç listesi](docs/screenshots/businesses.png) | ![Not geçmişi ve arama durumuyla işletme detayı](docs/screenshots/lead-detail.png) |
 | **Arama takibi (CRM)** | **Yeni tarama** |
 | ![Arama durumuna göre gruplanmış CRM sayfası](docs/screenshots/crm.png) | ![Konum, filtre ve kategori seçimiyle yeni tarama formu](docs/screenshots/new-scan.png) |
+
+<img src="docs/screenshots/mobile-dashboard.png" alt="390 piksel genişliğindeki telefon ekranında panel" width="260">
 
 <sub>Kurgusal demo verisi. Harita görünümü gösterilmemiştir.</sub>
 
@@ -351,7 +353,7 @@ Diğer komutlar: `npm run build` (sunucu `tsc` + istemci `vite build`), `npm sta
 npm test          # sunucu test paketini (Vitest) çalıştırır
 ```
 
-8 dosyadaki 41 test; web sitesi sınıflandırıcıyı, mesafe hesabını, Places arama filtrelerini (Prisma ve Places API mock'lanmış), liste filtrelerini, zincir marka eşleştirmeyi, tarama limitlerini, API hata yanıtlarını, yerel erişim korumasını, üretilen sitelerdeki HTML kaçışını ve CSV formül korumasını kapsar. API anahtarı veya ağ erişimi gerekmez; canlı Google, Gemini ve Vercel entegrasyonları otomatik testlerle kapsanmaz.
+10 dosyadaki 50 test; web sitesi sınıflandırıcıyı, mesafe hesabını, Places arama filtrelerini (Prisma ve Places API mock'lanmış), liste filtrelerini, zincir marka eşleştirmeyi (’ kesme işareti dahil), tarama limitlerini (aynı anda başlatılan ve başarısız taramalar dahil), API hata yanıtlarını (bozuk JSON gövdeleri dahil), yerel erişim korumasını, üretilen sitelerdeki HTML kaçışını, CSV formül korumasını ve demo modunun kurgusal verisini kapsar. API anahtarı veya ağ erişimi gerekmez; canlı Google, Gemini ve Vercel entegrasyonları otomatik testlerle kapsanmaz.
 
 GitHub Actions (`.github/workflows/ci.yml`) her push ve pull request'te sunucu için `tsc --noEmit`, testler ve build, geçici bir veritabanında migration'lar ve iki seed betiği ile istemcinin production build'ini çalıştırır.
 
@@ -370,8 +372,8 @@ npm start         # API 127.0.0.1:3001, derlenmiş arayüz http://localhost:5173
 
 - API yalnızca `127.0.0.1` adresini dinler; `Host` başlığı yerel olmayan (DNS rebinding) veya `Origin` başlığı başka bir siteye ait (CSRF) istekleri reddeder.
 - Google API anahtarı `server/.env` dosyasından okunur ve tarayıcıya gönderilmez. Gemini anahtar(lar)ı ve Vercel token'ı yerel SQLite veritabanında düz metin olarak saklanır.
-- İşletme adları, adresler ve yorumlar üçüncü taraflardan gelir: üretilen demo sitelerde kaçışlanır, arayüzdeki dış bağlantılarda yalnızca `http(s)` adreslerine izin verilir ve `=`, `+`, `-` veya `@` ile başlayan CSV hücreleri etkisiz hale getirilir.
-- İstekler Zod ile doğrulanır; hata yanıtlarında veritabanı ayrıntıları yerine kısa bir mesaj döner (ayrıntılar sunucuda loglanır).
+- İşletme adları, adresler ve yorumlar üçüncü taraflardan gelir: üretilen demo sitelerde kaçışlanır, arayüzdeki dış bağlantılarda yalnızca `http(s)` adreslerine izin verilir ve `=`, `+`, `-`, `@`, sekme veya satır başı (CR) karakteriyle başlayan CSV hücrelerinin başına `'` eklenir; böylece tablo programları bunları formül olarak çalıştırmaz. Telefon numarasına benzeyen değerler (yalnızca rakam, boşluk, parantez ve tire; başta isteğe bağlı `+`, örn. `+90 312 000 00 01`) bilerek olduğu gibi bırakılır.
+- İstekler Zod ile doğrulanır. Bozuk bir JSON gövdesi 400, hiçbir route'un yakalamadığı bir hata genel bir 500 yanıtı alır; ikisi de yığın izi (stack trace) içermeyen kısa JSON mesajlarıdır. Veritabanı hata ayrıntıları yalnızca sunucuda loglanır. Google, Gemini ve Vercel API'lerininki gibi diğer hata mesajları, çağrının neden başarısız olduğu görülebilsin diye iletilir.
 - Gemini API'nin yazdığı HTML olduğu gibi yayınlanır — üretilen siteyi işletmeye göndermeden önce kontrol edin.
 
 ### Durum ve yol haritası
