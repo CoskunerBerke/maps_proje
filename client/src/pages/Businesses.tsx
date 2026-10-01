@@ -716,8 +716,9 @@ export default function Businesses({ showToast, userLocation }: BusinessesProps)
       </div>
 
       {/* CRM DETAILS & NOTES MODAL */}
+      {/* !mt-0: the page's space-y-6 would otherwise give this fixed overlay a 24px top margin */}
       {selectedBusiness && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 overflow-y-auto">
+        <div className="fixed inset-0 !mt-0 z-[9999] flex items-center justify-center p-4 bg-black/60 overflow-y-auto">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl relative">
             
             {/* Modal Header */}
