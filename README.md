@@ -47,7 +47,7 @@ It is built for freelancers and small agencies who sell web design / SEO service
 2. **Classify.** A business is *no website* when Google returns no `websiteUri`, *social media only* when that URL's domain is one of 8 social-media domains, and *has website* otherwise. The app relies on Google's field only and does not visit the sites.
 3. **Filter and store.** Chain brands (whole-word match after Turkish case and apostrophe folding), open now, phone, rating and review filters are applied, then the businesses are upserted by Google Place ID in one transaction, so call statuses, notes and demo-site links survive later scans.
 4. **Work the leads.** The server filters and sorts the list; each lead has one of 11 call statuses (any status can follow any other) and a note history; CSV export neutralizes cells that a spreadsheet would run as formulas. Removing a lead deletes it and its notes, and a later scan that finds it again adds it back as a new lead.
-5. **Demo site (experimental).** Gemini writes a one-page site from the business data and up to 4 Google photos; the 4–5 star reviews are added afterwards as an escaped carousel (an escaped local template is used when Gemini fails). The result is deployed to Vercel as a new project each time, and old ones are never deleted. Gemini's HTML is published without review, so check it before sending it to anyone.
+5. **Demo site (experimental).** Gemini writes a one-page site from the business data and up to 4 Google photos; the 4–5 star reviews are added afterwards as an escaped carousel (an escaped local template is used when Gemini fails). The result is deployed to Vercel as a new project each time, and old ones are never deleted. The request runs synchronously and none of its outbound calls has a timeout. Gemini's HTML is published without review, so check it before sending it to anyone.
 
 The full explanation, with sequence diagrams, the API reference, the data model, the exact rules and thresholds, design trade-offs and known gaps, is in **[docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md)**.
 
@@ -165,7 +165,10 @@ Other scripts: `npm run build` (server `tsc` + client `vite build`), `npm start`
 | `PORT` | `3001` | API port (the Vite proxy in `client/vite.config.ts` points to 3001) |
 | `HOST` | `127.0.0.1` | Interface the API listens on. Keep the loopback address. |
 | `ALLOWED_HOSTS` | empty | Extra host names accepted in `Host` / `Origin` headers, comma separated |
-| `DATABASE_URL` | `file:./dev.db` | SQLite connection string |
+| `DATABASE_URL` | none, required (`.env.example`: `file:./dev.db`) | SQLite connection string. Prisma resolves the relative path against `server/prisma/`, so the file is `server/prisma/dev.db` |
+| `NODE_ENV` | unset | `production` makes the API serve the built client on its own port; `development` turns on Prisma query logs |
+
+The full configuration reference, including the values fixed in code, is in [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md#23-configuration-reference).
 
 ### Settings page
 
@@ -201,7 +204,7 @@ With `NODE_ENV=production` the API also serves `client/dist` itself on port 3001
 
 ## Security
 
-- The API listens on `127.0.0.1` only and rejects requests whose `Host` header is not a local name (DNS rebinding) or whose `Origin` belongs to another website (CSRF).
+- The API listens on `127.0.0.1` only and rejects requests whose `Host` header is not a local name (DNS rebinding) or whose `Origin` header carries a host name that is not local (CSRF). CORS stops cross-site `PATCH`, `DELETE` and JSON `POST` requests at the preflight, but a *simple* request such as a bodiless `POST` to the demo-site route is sent without one; the `Origin` check is what rejects it. That check ignores the port, so a page on another `localhost` port can still send simple requests.
 - The Google API key is read from `server/.env` and never sent to the browser. The Gemini key(s) and the Vercel token are stored in plain text in the local SQLite database.
 - Business names, addresses and reviews come from third parties: the local fallback template and the reviews carousel of a generated demo site escape them (Gemini's own HTML is not sanitized, see the last point), external links in the UI only allow `http(s)` URLs, and CSV cells starting with `=`, `+`, `-`, `@`, a tab or a carriage return get a leading `'` so spreadsheets do not run them as formulas. Phone-like values (only digits, spaces, parentheses and hyphens, optionally after a leading `+`, e.g. `+90 312 000 00 01`) are deliberately left as they are.
 - Request bodies are validated with Zod. A malformed JSON body gets a 400 and an error that no route handled gets a generic 500, both as short JSON messages without a stack trace; database error details are only logged on the server. Other error messages, such as those from the Google, Gemini and Vercel APIs, are passed on so you can see why a call failed.
@@ -211,7 +214,7 @@ With `NODE_ENV=production` the API also serves `client/dist` itself on port 3001
 
 - **Working:** real and demo scans, website classification, results list with filters and sorting, CSV/XLSX export, map view, CRM statuses and notes, excluded brands, dashboard statistics.
 - **Experimental:** demo site generator (needs your own Gemini and Vercel accounts).
-- **Known gaps:** "max businesses per search" is not enforced; the seeded chain list contains ordinary words (`Mavi`, `Gratis`) that also hide independent businesses; search history (`/api/sessions`) has no screen; regenerated demo sites pile up on Vercel; the client `npm run lint` script has no ESLint configuration yet; the map needs internet access to OpenStreetMap tiles.
+- **Known gaps:** "max businesses per search" is not enforced; the seeded chain list contains ordinary words (`Mavi`, `Gratis`) that also hide independent businesses; search history (`/api/sessions`) has no screen; regenerated demo sites pile up on Vercel; demo-site generation has no timeouts, no cancellation and no guard against two runs for the same business; the client `npm run lint` script has no ESLint configuration yet; the map needs internet access to OpenStreetMap tiles.
 
 ## Troubleshooting (Windows)
 
@@ -252,7 +255,7 @@ Yerel işletmelere web tasarım ve SEO hizmeti satan serbest çalışanlar ve k�
 2. **Sınıflandırma.** Google `websiteUri` döndürmezse işletme *web sitesi yok*, adresin alan adı 8 sosyal medya alan adından biriyse *sadece sosyal medya*, aksi halde *web sitesi var* sayılır. Uygulama yalnızca Google'ın bu alanına bakar, siteleri ziyaret etmez.
 3. **Filtreleme ve kayıt.** Zincir markalar (Türkçe harf ve kesme işareti farkları giderildikten sonra tam kelime eşleşmesiyle), açık olma, telefon, puan ve yorum filtreleri uygulanır; işletmeler tek bir transaction içinde Google Place ID ile güncellenir, böylece arama durumları, notlar ve demo site bağlantıları sonraki taramalarda korunur.
 4. **Müşteri takibi.** Liste sunucuda filtrelenir ve sıralanır; her işletmenin 11 arama durumundan biri (her durumdan her duruma geçilebilir) ve bir not geçmişi vardır; CSV dışa aktarma, tablo programlarının formül olarak çalıştıracağı hücreleri etkisiz hale getirir. Bir işletmeyi listeden çıkarmak onu notlarıyla birlikte siler; sonraki bir tarama onu bulursa yeni bir kayıt olarak geri ekler.
-5. **Demo site (deneysel).** Gemini, işletme bilgileri ve en fazla 4 Google fotoğrafından tek sayfalık bir site yazar; 4–5 yıldızlı yorumlar sonradan kaçışlı bir carousel olarak eklenir (Gemini başarısız olursa kaçışlı yerel şablon kullanılır). Sonuç her seferinde yeni bir proje olarak Vercel'e yüklenir ve eski projeler silinmez. Gemini'nin HTML'i kontrol edilmeden yayınlanır; kimseye göndermeden önce inceleyin.
+5. **Demo site (deneysel).** Gemini, işletme bilgileri ve en fazla 4 Google fotoğrafından tek sayfalık bir site yazar; 4–5 yıldızlı yorumlar sonradan kaçışlı bir carousel olarak eklenir (Gemini başarısız olursa kaçışlı yerel şablon kullanılır). Sonuç her seferinde yeni bir proje olarak Vercel'e yüklenir ve eski projeler silinmez. İstek eşzamanlı çalışır ve dış çağrılarının hiçbirinde zaman aşımı yoktur. Gemini'nin HTML'i kontrol edilmeden yayınlanır; kimseye göndermeden önce inceleyin.
 
 Diyagramlar, API listesi, veri modeli, kesin kurallar ve eşik değerleri, tasarım tercihleri ve bilinen eksiklerle ayrıntılı açıklama (İngilizce, sonunda Türkçe özetiyle): **[docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md)**.
 
@@ -363,7 +366,10 @@ Diğer komutlar: `npm run build` (sunucu `tsc` + istemci `vite build`), `npm sta
 | `PORT` | `3001` | API portu (`client/vite.config.ts` içindeki proxy 3001'e yönlenir) |
 | `HOST` | `127.0.0.1` | API'nin dinlediği arayüz. Loopback adresinde bırakın. |
 | `ALLOWED_HOSTS` | boş | `Host` / `Origin` başlıklarında kabul edilecek ek host adları (virgülle) |
-| `DATABASE_URL` | `file:./dev.db` | SQLite bağlantı adresi |
+| `DATABASE_URL` | yok, zorunlu (`.env.example`: `file:./dev.db`) | SQLite bağlantı adresi. Prisma göreli yolu `server/prisma/` klasörüne göre çözer; dosya `server/prisma/dev.db` olur |
+| `NODE_ENV` | tanımsız | `production` ile API derlenmiş arayüzü kendi portundan sunar; `development` Prisma sorgu loglarını açar |
+
+Koda sabit yazılmış değerler dahil tüm yapılandırma listesi: [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md#23-configuration-reference).
 
 **Ayarlar sayfası:** demo modu, Gemini API anahtar(lar)ı (virgülle ayrılan anahtarlar sırayla denenir), Vercel token'ı, zincir marka listesi ve limitler. "Günlük maksimum tarama" ve "tarama başına maksimum kategori" gerçek Google taramalarında uygulanır; "tarama başına maksimum işletme" kaydedilir ama henüz uygulanmaz.
 
@@ -392,7 +398,7 @@ npm start         # API 127.0.0.1:3001, derlenmiş arayüz http://localhost:5173
 
 ### Güvenlik
 
-- API yalnızca `127.0.0.1` adresini dinler; `Host` başlığı yerel olmayan (DNS rebinding) veya `Origin` başlığı başka bir siteye ait (CSRF) istekleri reddeder.
+- API yalnızca `127.0.0.1` adresini dinler; `Host` başlığı yerel bir ad olmayan (DNS rebinding) veya `Origin` başlığındaki host adı yerel olmayan (CSRF) istekleri reddeder. CORS, siteler arası `PATCH`, `DELETE` ve JSON `POST` isteklerini ön kontrolde (preflight) durdurur; ancak demo site uç noktasına gövdesiz bir `POST` gibi *basit* bir istek ön kontrolsüz gönderilir ve onu `Origin` kontrolü reddeder. Bu kontrol portu karşılaştırmaz; bu yüzden `localhost`'ta başka bir porttaki sayfa basit istekleri yine gönderebilir.
 - Google API anahtarı `server/.env` dosyasından okunur ve tarayıcıya gönderilmez. Gemini anahtar(lar)ı ve Vercel token'ı yerel SQLite veritabanında düz metin olarak saklanır.
 - İşletme adları, adresler ve yorumlar üçüncü taraflardan gelir: üretilen demo sitenin yerel yedek şablonunda ve yorum carousel'inde kaçışlanır (Gemini'nin kendi HTML'i temizlenmez, bkz. son madde), arayüzdeki dış bağlantılarda yalnızca `http(s)` adreslerine izin verilir ve `=`, `+`, `-`, `@`, sekme veya satır başı (CR) karakteriyle başlayan CSV hücrelerinin başına `'` eklenir; böylece tablo programları bunları formül olarak çalıştırmaz. Telefon numarasına benzeyen değerler (yalnızca rakam, boşluk, parantez ve tire; başta isteğe bağlı `+`, örn. `+90 312 000 00 01`) bilerek olduğu gibi bırakılır.
 - İstek gövdeleri Zod ile doğrulanır. Bozuk bir JSON gövdesi 400, hiçbir route'un yakalamadığı bir hata genel bir 500 yanıtı alır; ikisi de yığın izi (stack trace) içermeyen kısa JSON mesajlarıdır. Veritabanı hata ayrıntıları yalnızca sunucuda loglanır. Google, Gemini ve Vercel API'lerininki gibi diğer hata mesajları, çağrının neden başarısız olduğu görülebilsin diye iletilir.
@@ -402,7 +408,7 @@ npm start         # API 127.0.0.1:3001, derlenmiş arayüz http://localhost:5173
 
 - **Çalışan:** gerçek ve demo tarama, web sitesi sınıflandırma, filtreli ve sıralı sonuç listesi, CSV/XLSX dışa aktarma, harita, CRM durumları ve notlar, hariç tutulan markalar, panel istatistikleri.
 - **Deneysel:** demo site oluşturucu (kendi Gemini ve Vercel hesaplarınızı gerektirir).
-- **Bilinen eksikler:** "tarama başına maksimum işletme" uygulanmıyor; varsayılan zincir listesindeki sıradan kelimeler (`Mavi`, `Gratis`) bağımsız işletmeleri de gizliyor; tarama geçmişinin (`/api/sessions`) ekranı yok; yeniden üretilen demo siteler Vercel'de birikiyor; istemcideki `npm run lint` için henüz ESLint yapılandırması yok; harita OpenStreetMap karolarına internet erişimi gerektirir.
+- **Bilinen eksikler:** "tarama başına maksimum işletme" uygulanmıyor; varsayılan zincir listesindeki sıradan kelimeler (`Mavi`, `Gratis`) bağımsız işletmeleri de gizliyor; tarama geçmişinin (`/api/sessions`) ekranı yok; yeniden üretilen demo siteler Vercel'de birikiyor; demo site üretiminde zaman aşımı, iptal ve aynı işletme için iki üretimi engelleyen bir kilit yok; istemcideki `npm run lint` için henüz ESLint yapılandırması yok; harita OpenStreetMap karolarına internet erişimi gerektirir.
 
 ### Sorun giderme (Windows)
 
