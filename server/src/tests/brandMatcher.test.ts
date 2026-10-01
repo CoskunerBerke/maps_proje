@@ -24,4 +24,11 @@ describe('Zincir marka eşleştirme (brandMatcher)', () => {
     expect(isChainBusiness('Örnek Kafe', ['   ', ''])).toBe(false);
     expect(isChainBusiness('Gratis Kızılay', ['Watsons', 'Gratis'])).toBe(true);
   });
+
+  it('Kıvrık kesme işaretini (’) düz kesme işareti (\') gibi saymalıdır', () => {
+    expect(matchesBrand('McDonald’s Kızılay', "McDonald's")).toBe(true);
+    expect(matchesBrand("McDonald's Kızılay", 'McDonald’s')).toBe(true);
+    expect(matchesBrand('Domino’s Pizza Bahçelievler', "Domino's Pizza")).toBe(true);
+    expect(matchesBrand('McDonald Kebap', "McDonald's")).toBe(false);
+  });
 });

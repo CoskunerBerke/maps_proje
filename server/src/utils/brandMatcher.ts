@@ -5,7 +5,11 @@
  * no longer hides independent businesses like "Floransa Pastanesi".
  */
 
-/** Lowercases and folds Turkish dotted/dotless i so "LC WAIKIKI" and "LC Waikiki" compare equal. */
+/**
+ * Lowercases and folds Turkish dotted/dotless i so "LC WAIKIKI" and "LC Waikiki"
+ * compare equal, and turns typographic apostrophes (’ ‘ ʼ) into ' because Google
+ * often returns names such as "McDonald’s".
+ */
 export function normalizeForMatch(value: string): string {
   return value
     .toLowerCase()
@@ -13,6 +17,7 @@ export function normalizeForMatch(value: string): string {
     .replace(/̇/g, '') // combining dot left by "İ".toLowerCase()
     .replace(/ı/g, 'i')
     .normalize('NFC')
+    .replace(/[\u2018\u2019\u02BC]/g, "'")
     .trim();
 }
 
