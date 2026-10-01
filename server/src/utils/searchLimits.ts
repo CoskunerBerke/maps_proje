@@ -38,3 +38,17 @@ export function startOfLocalDay(now: Date = new Date()): Date {
   d.setHours(0, 0, 0, 0);
   return d;
 }
+
+/**
+ * Returns a function that runs async tasks one at a time, in call order, even
+ * when a task fails. The API runs as a single Node.js process, so this is
+ * enough to make "count today's searches + create the new session" atomic.
+ */
+export function createSerialQueue() {
+  let tail: Promise<unknown> = Promise.resolve();
+  return function runExclusive<T>(task: () => Promise<T>): Promise<T> {
+    const result = tail.then(task);
+    tail = result.catch(() => undefined);
+    return result;
+  };
+}
