@@ -41,6 +41,16 @@ It is built for freelancers and small agencies who sell web design / SEO service
 - **Cost limits** — the daily search limit (default 100) and the max categories per search (default 10) from the Settings page are enforced for real Google searches; failed searches count too, and two searches started at the same time cannot both slip past the daily limit
 - **Demo site generator (experimental)** — for a selected business, builds a one-page website with the Gemini API (using its Google photos and 4–5 star reviews; a local template is used when Gemini is unavailable), deploys it to Vercel, looks up a public e-mail address and appends the lead to `potansiyel-musteriler.txt` on the Desktop. The Gemini key(s) and the Vercel token are entered on the Settings page.
 
+## How it works
+
+1. **Scan.** For every selected category the server sends one Google Places Nearby Search request (at most 5 at a time, 10 s timeout, up to 20 places each; no further pages). Real searches are first checked against the categories-per-search and daily limits; that check and the creation of the search record run under one lock, and the record is counted even if the search later fails.
+2. **Classify.** A business is *no website* when Google returns no `websiteUri`, *social media only* when that URL's domain is one of 8 social networks, and *has website* otherwise. The app relies on Google's field only and does not visit the sites.
+3. **Filter and store.** Chain brands (whole-word match after Turkish case and apostrophe folding), open now, phone, rating and review filters are applied, then the businesses are upserted by Google Place ID in one transaction, so call statuses, notes and demo-site links survive later scans.
+4. **Work the leads.** The server filters and sorts the list; each lead has one of 11 call statuses (any status can follow any other) and a note history; CSV export neutralizes cells that a spreadsheet would run as formulas.
+5. **Demo site (experimental).** Gemini writes a one-page site from the business data, up to 4 Google photos and its 4–5 star reviews (an escaped local template is used when Gemini fails), and the result is deployed to Vercel. Gemini's HTML is published without review, so check it before sending it to anyone.
+
+The full explanation, with sequence diagrams, the data model, the exact rules and thresholds, design trade-offs and known gaps, is in **[docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md)**.
+
 ## Screenshots
 
 | Results list | Lead detail and CRM update |
@@ -114,6 +124,7 @@ maps_proje/
 │       ├── services/          # placesService, aiWebsiteService
 │       ├── utils/             # classifier, list filters, brand matcher, CSV/HTML escaping, local-only guard, ...
 │       └── tests/             # Vitest tests
+├── docs/HOW_IT_WORKS.md       # how it works: flows, rules, data model, trade-offs
 ├── docs/screenshots/          # README screenshots (fictional demo data)
 ├── baslat.bat                 # Windows one-click launcher
 └── package.json               # root scripts (runs client + server together)
@@ -193,7 +204,7 @@ With `NODE_ENV=production` the API also serves `client/dist` itself on port 3001
 - The API listens on `127.0.0.1` only and rejects requests whose `Host` header is not a local name (DNS rebinding) or whose `Origin` belongs to another website (CSRF).
 - The Google API key is read from `server/.env` and never sent to the browser. The Gemini key(s) and the Vercel token are stored in plain text in the local SQLite database.
 - Business names, addresses and reviews come from third parties: generated demo sites escape them, external links in the UI only allow `http(s)` URLs, and CSV cells starting with `=`, `+`, `-`, `@`, a tab or a carriage return get a leading `'` so spreadsheets do not run them as formulas. Phone-like values (only digits, spaces, parentheses and hyphens, optionally after a leading `+`, e.g. `+90 312 000 00 01`) are deliberately left as they are.
-- Requests are validated with Zod. A malformed JSON body gets a 400 and an error that no route handled gets a generic 500, both as short JSON messages without a stack trace; database error details are only logged on the server. Other error messages, such as those from the Google, Gemini and Vercel APIs, are passed on so you can see why a call failed.
+- Request bodies are validated with Zod. A malformed JSON body gets a 400 and an error that no route handled gets a generic 500, both as short JSON messages without a stack trace; database error details are only logged on the server. Other error messages, such as those from the Google, Gemini and Vercel APIs, are passed on so you can see why a call failed.
 - HTML written by the Gemini API is published as-is — review a generated site before sending it to a business.
 
 ## Status and roadmap
@@ -234,6 +245,16 @@ Yerel işletmelere web tasarım ve SEO hizmeti satan serbest çalışanlar ve k�
 - **Demo Modu** — API anahtarı olmadan, kurgusal telefon numaraları ve sosyal medya hesapları olan yerleşik örnek mekânlarla (Ankara / İstanbul) çalışır
 - **Maliyet limitleri** — Ayarlar sayfasındaki günlük tarama limiti (varsayılan 100) ve tarama başına kategori limiti (varsayılan 10) gerçek Google taramalarında uygulanır; başarısız taramalar da sayılır ve aynı anda başlatılan iki tarama günlük limiti birlikte aşamaz
 - **Demo site oluşturucu (deneysel)** — seçilen işletme için Gemini API ile (Google fotoğrafları ve 4–5 yıldızlı yorumlarıyla; Gemini kullanılamazsa yerel şablonla) tek sayfalık site üretir, Vercel'e yükler, herkese açık bir e-posta adresi arar ve kaydı Masaüstündeki `potansiyel-musteriler.txt` dosyasına ekler. Gemini anahtar(lar)ı ve Vercel token'ı Ayarlar sayfasından girilir.
+
+### Nasıl çalışır?
+
+1. **Tarama.** Seçilen her kategori için sunucu Google Places'a bir Nearby Search isteği gönderir (aynı anda en fazla 5, 10 sn zaman aşımı, istek başına en fazla 20 işletme; sonraki sayfalar alınmaz). Gerçek taramalar önce tarama başına kategori ve günlük tarama limitlerine göre kontrol edilir; bu kontrol ve tarama kaydının oluşturulması tek bir kilit altında çalışır ve tarama sonradan başarısız olsa da kayıt sayılır.
+2. **Sınıflandırma.** Google `websiteUri` döndürmezse işletme *web sitesi yok*, adresin alan adı 8 sosyal ağdan biriyse *sadece sosyal medya*, aksi halde *web sitesi var* sayılır. Uygulama yalnızca Google'ın bu alanına bakar, siteleri ziyaret etmez.
+3. **Filtreleme ve kayıt.** Zincir markalar (Türkçe harf ve kesme işareti farkları giderildikten sonra tam kelime eşleşmesiyle), açık olma, telefon, puan ve yorum filtreleri uygulanır; işletmeler tek bir transaction içinde Google Place ID ile güncellenir, böylece arama durumları, notlar ve demo site bağlantıları sonraki taramalarda korunur.
+4. **Müşteri takibi.** Liste sunucuda filtrelenir ve sıralanır; her işletmenin 11 arama durumundan biri (her durumdan her duruma geçilebilir) ve bir not geçmişi vardır; CSV dışa aktarma, tablo programlarının formül olarak çalıştıracağı hücreleri etkisiz hale getirir.
+5. **Demo site (deneysel).** Gemini; işletme bilgileri, en fazla 4 Google fotoğrafı ve 4–5 yıldızlı yorumlardan tek sayfalık bir site yazar (Gemini başarısız olursa kaçışlı yerel şablon kullanılır) ve sonuç Vercel'e yüklenir. Gemini'nin HTML'i kontrol edilmeden yayınlanır; kimseye göndermeden önce inceleyin.
+
+Diyagramlar, veri modeli, kesin kurallar ve eşik değerleri, tasarım tercihleri ve bilinen eksiklerle ayrıntılı açıklama (İngilizce, sonunda Türkçe özetiyle): **[docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md)**.
 
 ### Ekran görüntüleri
 
@@ -308,6 +329,7 @@ maps_proje/
 │       ├── services/          # placesService, aiWebsiteService
 │       ├── utils/             # sınıflandırıcı, liste filtreleri, marka eşleştirme, CSV/HTML kaçışı, yerel erişim koruması, ...
 │       └── tests/             # Vitest testleri
+├── docs/HOW_IT_WORKS.md       # nasıl çalışır: akışlar, kurallar, veri modeli, tercihler
 ├── docs/screenshots/          # README görüntüleri (kurgusal demo verisi)
 ├── baslat.bat                 # Windows tek tıkla başlatıcı
 └── package.json               # kök komutlar (istemci + sunucuyu birlikte çalıştırır)
@@ -373,7 +395,7 @@ npm start         # API 127.0.0.1:3001, derlenmiş arayüz http://localhost:5173
 - API yalnızca `127.0.0.1` adresini dinler; `Host` başlığı yerel olmayan (DNS rebinding) veya `Origin` başlığı başka bir siteye ait (CSRF) istekleri reddeder.
 - Google API anahtarı `server/.env` dosyasından okunur ve tarayıcıya gönderilmez. Gemini anahtar(lar)ı ve Vercel token'ı yerel SQLite veritabanında düz metin olarak saklanır.
 - İşletme adları, adresler ve yorumlar üçüncü taraflardan gelir: üretilen demo sitelerde kaçışlanır, arayüzdeki dış bağlantılarda yalnızca `http(s)` adreslerine izin verilir ve `=`, `+`, `-`, `@`, sekme veya satır başı (CR) karakteriyle başlayan CSV hücrelerinin başına `'` eklenir; böylece tablo programları bunları formül olarak çalıştırmaz. Telefon numarasına benzeyen değerler (yalnızca rakam, boşluk, parantez ve tire; başta isteğe bağlı `+`, örn. `+90 312 000 00 01`) bilerek olduğu gibi bırakılır.
-- İstekler Zod ile doğrulanır. Bozuk bir JSON gövdesi 400, hiçbir route'un yakalamadığı bir hata genel bir 500 yanıtı alır; ikisi de yığın izi (stack trace) içermeyen kısa JSON mesajlarıdır. Veritabanı hata ayrıntıları yalnızca sunucuda loglanır. Google, Gemini ve Vercel API'lerininki gibi diğer hata mesajları, çağrının neden başarısız olduğu görülebilsin diye iletilir.
+- İstek gövdeleri Zod ile doğrulanır. Bozuk bir JSON gövdesi 400, hiçbir route'un yakalamadığı bir hata genel bir 500 yanıtı alır; ikisi de yığın izi (stack trace) içermeyen kısa JSON mesajlarıdır. Veritabanı hata ayrıntıları yalnızca sunucuda loglanır. Google, Gemini ve Vercel API'lerininki gibi diğer hata mesajları, çağrının neden başarısız olduğu görülebilsin diye iletilir.
 - Gemini API'nin yazdığı HTML olduğu gibi yayınlanır — üretilen siteyi işletmeye göndermeden önce kontrol edin.
 
 ### Durum ve yol haritası
