@@ -89,6 +89,8 @@ flowchart TB
     BizR --> TXT
 ```
 
+The diagram shows the development setup. The other ways to run it are in [2.1](#21-run-modes).
+
 | Component | Responsibility | Code |
 | --- | --- | --- |
 | React client | A single page app that switches tabs through state, with no router. It also remembers the last location in `localStorage`. The results list is paged on the client, 10 rows per page. | [`App.tsx` `App`](../client/src/App.tsx), [`pages/`](../client/src/pages) |
@@ -118,6 +120,43 @@ flowchart LR
     Rt -- "error caught in route" --> SRE["sendRouteError:<br/>400, 404 or 500"]
     Rt -- "error not caught" --> R500["generic 500 JSON"]
 ```
+
+### 2.1 Run modes
+
+| Mode | How it starts | Who serves the page | Page origin (sent as `Origin` when the browser adds one) |
+| --- | --- | --- | --- |
+| Development | `npm run dev`: `ts-node-dev` for the server, `vite` for the client | The Vite dev server on `localhost:5173`. It proxies `/api` to `127.0.0.1:3001`. | `http://localhost:5173` |
+| Preview | `npm start`: `node dist/server.js` and `vite preview --port 5173` | The Vite preview server on port 5173. Vite's preview server inherits the dev `proxy` setting, so `/api` is forwarded the same way. | `http://localhost:5173` |
+| Production | `NODE_ENV=production` in the server's environment or `server/.env`. No script sets it. | The API itself. [`createApp`](../server/src/app.ts) adds `express.static` for `client/dist` and a `GET *` fallback to `index.html`, so page and API share port 3001. | `http://localhost:3001` or `http://127.0.0.1:3001` |
+
+In production mode the page and the API have the same origin, so CORS plays no part. The Origin guard still runs and passes, because it checks only the hostname ([5.13](#513-local-only-security-model)). The static files and the fallback are mounted after the guard and the rate limiter, so page loads count toward the same 100 requests per minute. The fallback is registered after the routers, so an unknown `GET /api/...` path returns `index.html` with status 200 instead of a 404.
+
+### 2.2 API reference
+
+Every API route is under `/api`, has no authentication and passes through the middleware chain above. Bodies and responses are JSON, except the two exports and the production-only fallback in the last row. The last column names the client page that calls the route.
+
+| Method and path | Input | Effect and response | Called from |
+| --- | --- | --- | --- |
+| `POST /api/places/search` | Body ([`SearchRequestSchema`](../server/src/schemas/validation.ts)): `latitude`, `longitude`, `radius`, `categories`, `onlyOpen`, `onlyWithPhone`, `minimumRating`, `minimumReviewCount`, `excludeChains` | Reserves a `SearchSession` under the lock, runs the scan and upserts the businesses ([3.1](#31-scanning-an-area)). Returns `{ sessionId, results }`. 400 for invalid input, too many categories or a whitespace-only key, 429 for the daily limit. | NewScan |
+| `GET /api/businesses` | Query: `status`, `callingStatus`, `crmGroup`, `onlyWithPhone`, `search`, `excludeExisting`, `sortBy`, `lat`, `lng` | Every matching business with its notes and a `distance` in metres (0 without coordinates). No paging ([5.10](#510-listing-filtering-and-sorting)). | Businesses, CRMTracking, MapView |
+| `GET /api/businesses/:id` | none | One business with its notes, or 404. | Not called by the client |
+| `PATCH /api/businesses/:id` | Body ([`BusinessUpdateSchema`](../server/src/schemas/validation.ts)): `callingStatus` (one of 11, optional), `note` (up to 5000 characters, optional) | One update with an optional nested note ([5.9](#59-notes)). Returns the business with its notes, or 404. | Businesses (row action and lead detail), CRMTracking |
+| `DELETE /api/businesses/:id` | none | **Permanently deletes** the business. Its notes go with it by cascade ([5.5](#55-deduplication-and-persistence-across-scans)). | Businesses: the "Listeden Çıkar" button |
+| `POST /api/businesses/export/csv` | Body ([`ExportRequestSchema`](../server/src/schemas/validation.ts)): `businessIds` (up to 10,000, optional), `lat`, `lng` | A CSV download ([5.11](#511-csv-and-xlsx-export-with-formula-neutralization)). **Without `businessIds`, every business in the database is exported.** | Businesses |
+| `POST /api/businesses/export/xlsx` | Same as CSV | An XLSX download. `lat` and `lng` fill the distance column. | Businesses |
+| `POST /api/businesses/:id/generate-site` | none | The demo-site flow ([5.12](#512-demo-site-generation)). It calls DuckDuckGo, Google, Gemini and Vercel, creates a new Vercel project, and writes `email`, `demoWebsiteUrl`, a note and a line in the Desktop file. | Businesses (lead detail), CRMTracking |
+| `GET /api/sessions` | none | Every `SearchSession`, newest first. | **No client UI** |
+| `GET /api/sessions/:id` | none | One session with the businesses it first found, or 404. | **No client UI** |
+| `DELETE /api/sessions/:id` | none | Deletes the session. Its businesses stay, with `searchSessionId` set to `NULL`. The session stops counting toward today's limit ([5.6](#56-cost-limits-and-the-serial-queue)). | **No client UI** |
+| `GET /api/excluded-brands` | none | The brand list, sorted by name. | Settings |
+| `POST /api/excluded-brands` | Body: `name` (trimmed, 1 to 100 characters) | Adds a brand and returns 201. Returns 400 if exactly that name is already stored. | Settings |
+| `DELETE /api/excluded-brands/:id` | none | Removes a brand, or 404. | Settings |
+| `GET /api/settings` | none | The `global` settings row, created with defaults if it is missing. **The response contains `geminiApiKey` and `vercelToken` in plain text.** | Settings |
+| `PATCH /api/settings` | Body ([`SettingsUpdateSchema`](../server/src/schemas/validation.ts)): any of `dailyMaxSearches` (1 to 1000), `maxCategoriesPerSearch` (1 to 50), `maxBusinessesPerSearch` (1 to 1000), `isDemoMode`, `geminiApiKey`, `vercelToken` | Upserts the settings row and returns it. | Settings |
+| `GET /api/statistics` | none | Totals (all, per website status, with a phone, called, interested, converted) and the category breakdown of potential clients. | Dashboard |
+| `GET *` (production mode only) | none | A file from `client/dist`, otherwise `index.html`. | The browser |
+
+The routes with the largest effect are `GET /api/settings`, which returns the stored credentials; the two business and session `DELETE` routes, which cannot be undone; an export without `businessIds`, which returns the whole database; and `generate-site`, which spends Google, Gemini and Vercel quota and publishes a page. The search-history routes exist only as API: the client has no screen that lists or deletes sessions.
 
 ## 3. Main runtime flows
 
@@ -285,10 +324,10 @@ The fields that matter:
 | `Business` | `websiteStatus` | `no_website`, `social_media_only` or `has_website`, set on every scan by [`classifyWebsite`](../server/src/utils/websiteClassifier.ts). The type also allows `unchecked`, but no code path produces it. |
 | `Business` | `callingStatus` | One of the 11 Turkish CRM statuses, default `Henüz aranmadı` ("not called yet"). It is a plain string in the database. Only the API checks the allowed values. |
 | `Business` | `nationalPhoneNumber`, `internationalPhoneNumber` | "Has a phone" means either one is set, both in the scan filter and in the list filter. |
-| `Business` | `searchSessionId` | Set when the row is created and never updated, so it points to the scan that **first** found the business. When that session is deleted it becomes `NULL` (`onDelete: SetNull`). |
+| `Business` | `searchSessionId` | Set when the row is created and never updated, so it points to the scan that **first** found the business. When that session is deleted (possible only through the API, see [2.2](#22-api-reference)) it becomes `NULL` (`onDelete: SetNull`). |
 | `Business` | `lastSeenAt` | Updated whenever a later scan returns the business again. Nothing reads it yet. |
 | `Business` | `email`, `demoWebsiteUrl`, `photos` | Written by the demo-site flow. `email` holds `Bulunamadı` ("not found") when the lookup failed. |
-| `BusinessNote` | `content`, `createdAt` | A note history that is only ever added to (max 5000 characters per note). Notes are deleted only with their business (`onDelete: Cascade`). |
+| `BusinessNote` | `content`, `createdAt` | A note history that is only ever added to (max 5000 characters per note). Notes are deleted only with their business (`onDelete: Cascade`), which happens when the user removes the business with "Listeden Çıkar" ([5.5](#55-deduplication-and-persistence-across-scans)). |
 | `SearchSession` | `requestCount` | The number of billed Google requests. It drives the daily limit ([5.6](#56-cost-limits-and-the-serial-queue)). Demo searches store `0`. |
 | `AppSettings` | `id = "global"` | A single row. `GET /api/settings` creates it with defaults if it is missing. The seed script creates it too. |
 | `ExcludedBrand` | `name` | Unique. The seed script adds 11 brands ([`seed.ts` `DEFAULT_CHAIN_BRANDS`](../server/prisma/seed.ts)): Starbucks, McDonald's, Burger King, KFC, Domino's, LC Waikiki, DeFacto, Mavi, FLO, Watsons, Gratis. |
@@ -324,6 +363,14 @@ The route then removes duplicate categories, because each duplicate would be one
 - A 10 s timeout through an `AbortController`.
 
 The categories are processed in chunks of 5 (`chunkSize = 5`). The requests inside a chunk run in parallel and are awaited with `Promise.allSettled`. The chunks run one after another, so at most 5 requests are in flight at a time.
+
+**What a request costs: the field mask sets the tier.** Google bills a Nearby Search (New) request at the highest pricing tier (SKU) that any field in its field mask belongs to ([Google's Nearby Search (New) documentation](https://developers.google.com/maps/documentation/places/web-service/nearby-search)). Six of the 15 fields in this mask belong to the **Nearby Search Enterprise** tier: `websiteUri`, `nationalPhoneNumber`, `internationalPhoneNumber`, `rating`, `userRatingCount` and `regularOpeningHours`. Every category request is therefore billed as an Enterprise request. Three consequences follow:
+
+- The tier cannot be lowered without changing what the tool does. `websiteUri`, the one field the classification needs, triggers the Enterprise tier on its own. Dropping the phone, rating and opening-hours fields would shrink the response but not the price.
+- The billing unit is the request, not the place. A category that returns 3 places costs the same as one that returns 20.
+- That is why the cost limits in [5.6](#56-cost-limits-and-the-serial-queue) count categories and searches, not businesses.
+
+This document gives no prices, because Google sets and changes them.
 
 **Pagination and result limits.** The code requests 20 results and does not page further. Nearby Search (New) has no next-page token, so each category yields at most 20 places per scan. No `rankPreference` is sent, so Google's default ranking decides which 20 places come back. To cover a dense area, the user narrows the radius or the categories and scans again. The upsert keeps the earlier results.
 
@@ -372,6 +419,8 @@ The filters only decide which places are saved and returned **in this scan**. A 
   After this, `LC WAIKIKI` equals `LC Waikiki`, `MAVİ` equals `Mavi`, and Google's `Domino’s` equals the stored `Domino's`.
 - **Matching**, in [`matchesBrand`](../server/src/utils/brandMatcher.ts): the normalized brand is regex-escaped and wrapped in Unicode-aware lookarounds, `(?<![\p{L}\p{N}])brand(?![\p{L}\p{N}])`. The brand must therefore not be preceded or followed by a letter or digit. `FLO` matches `FLO Kızılay` but not `Floransa Pastanesi`. An empty brand never matches.
 - [`isChainBusiness`](../server/src/utils/brandMatcher.ts) is true if any stored brand matches. The brand list is read from the database on every scan.
+- **False positives from ordinary words.** Whole-word matching prevents substring accidents, but it cannot tell a brand from the same word used in an independent business's name. Two of the 11 seeded brands are ordinary words: `Mavi` is Turkish for "blue", and `Gratis` means "free of charge". Running `isChainBusiness` with the seed list returns `true` for `Mavi Kuaför`, `MAVİ EV CAFE` and `Gratis Kahve`, and `false` for `Mavişehir Fırını`, where the word continues. "Exclude chains" is checked by default in the NewScan form ([`NewScan.tsx` `excludeChains`](../client/src/pages/NewScan.tsx)), and an excluded place is skipped before it is stored. Such businesses therefore never reach the list, and nothing tells the user. Deleting those brands on the Settings page, or scanning with the option off, brings them in.
+- **Missed matches.** A brand only matches as written after normalization, so inflected forms and spelling variants of a brand name are not caught.
 
 ### 5.5 Deduplication and persistence across scans
 
@@ -383,6 +432,8 @@ Each surviving place becomes a `prisma.business.upsert` keyed by place ID, and a
 `photos` is written on both create and update from `place.photos`. This interacts badly with the Google mapping (see [8](#8-limitations-known-gaps-and-next-steps)).
 
 After the transaction, the session gets the final values: `totalFound` (saved results), `noWebsiteCount` (results that are `no_website` or `social_media_only`), `requestCount`, and `status = SUCCESS`.
+
+**Removing a lead is a hard delete.** The trash button in the results list, "Listeden Çıkar" ("remove from the list"), asks for confirmation and calls `DELETE /api/businesses/:id` ([`Businesses.tsx` `handleDeleteBusiness`](../client/src/pages/Businesses.tsx)). The route deletes the row, and its notes go with it (`onDelete: Cascade`). No tombstone or "ignored" flag is kept. The next scan that returns the same Place ID therefore creates the business again as a fresh `Henüz aranmadı` lead, with no notes and no trace of its earlier status. The upsert protects CRM work from rescans, not from this button. To park a lead without losing its history, set a status such as `Web sitesi istemiyor` ("does not want a website") instead. Deleting a business does not remove a demo site already deployed for it.
 
 ### 5.6 Cost limits and the serial queue
 
@@ -409,6 +460,11 @@ stateDiagram-v2
 
 `FAILED` keeps the reserved `requestCount` and stores the error message. Demo searches skip both limits and store `requestCount = 0`.
 
+**What the limits do not cover.**
+
+- They count scans only. When a Google key is set, the demo-site flow makes its own billed Google requests: Place Details for photos (when none are cached), Place Details for reviews, and up to 4 photo downloads ([5.12](#512-demo-site-generation)). None of these is counted, and neither is Gemini or Vercel usage.
+- The count is stored data, not a ledger. `DELETE /api/sessions/:id` removes a session and with it its place in today's count. The client has no search-history screen, so this is only possible through the API ([2.2](#22-api-reference)).
+
 ### 5.7 Demo mode vs real mode
 
 The mode is decided per request as `isDemo = settings.isDemoMode || !process.env.GOOGLE_MAPS_API_KEY`:
@@ -431,6 +487,8 @@ The 11 statuses are the enum in [`BusinessUpdateSchema`](../server/src/schemas/v
 | Lead detail modal | Any status plus an optional note, in one request |
 | CRM page | Status dropdown (no note), or a separate inline note (no status change) |
 | Demo-site generation | Adds an automatic note and leaves the status unchanged |
+
+The results list also has a delete button. It is not a status change: it removes the business and its notes for good ([5.5](#55-deduplication-and-persistence-across-scans)).
 
 **Groups.** The list filter `crmGroup` maps groups to sets of statuses ([`businessFilters.ts` `CRM_GROUPS`](../server/src/utils/businessFilters.ts)). The dashboard counts three things ([`statistics.ts`](../server/src/routes/statistics.ts)): *called* = status is not `Henüz aranmadı`, *interested* = `İlgileniyor` only, *converted* = `Müşteriye dönüştü` only.
 
@@ -511,12 +569,15 @@ The rows of both exports come back in database order, not in the order of the on
    - It uses the cached `photos` JSON. If that is empty and a Google key exists, it calls Place Details with `fields=photos` and caches the result.
    - It then downloads **up to 4** photos (`maxWidthPx=800`) as base64, named `photo-1.jpg` to `photo-4.jpg`.
    - Failures are logged and skipped.
-4. **Reviews.** It calls Place Details with `fields=reviews&languageCode=tr` and keeps reviews with rating ≥ 4 and more than 10 characters of text.
+4. **Reviews.** It calls Place Details with `fields=reviews&languageCode=tr` and keeps reviews with rating ≥ 4 and more than 10 characters of text. The review texts are **not** sent to Gemini. They are only used in post-processing (step 7.4).
 5. **Prompt construction**, in [`AIWebsiteService.generateHtml`](../server/src/services/aiWebsiteService.ts). One long instruction text, mostly in Turkish, holds:
    - the business name, category, address, phone, rating and review count;
+   - two map links built from that data: a Google Maps embed URL from the name and address, and the stored Maps link of the place (checked by `safeHttpUrl`) for the directions button;
    - design rules (Tailwind via CDN, a light theme, responsive grid classes);
    - rules for the photos: skip photos with close-up people, use only `./photo-1.jpg` to `./photo-N.jpg` for photos that really exist, otherwise use listed Unsplash URLs per business type;
-   - category-specific wording, the interactive elements to include, SEO tags with JSON-LD `LocalBusiness`, a fixed Google Maps embed URL, and the instruction to return raw HTML only.
+   - category-specific wording, the interactive elements to include, SEO tags with JSON-LD `LocalBusiness`, and the instruction to return raw HTML only.
+
+   That is all the business data the prompt carries. The e-mail address and the review texts are not part of it.
 
    The downloaded photos are attached as `inlineData` parts, so the request is multimodal.
 6. **The Gemini call.** Keys are split on commas or newlines. The loop runs over each key, then each of three model IDs hard-coded in `generateHtml`, then up to 2 attempts.
@@ -537,17 +598,24 @@ The rows of both exports come back in database order, not in the order of the on
    - One `POST /v13/deployments` call sends `index.html` and the photos (base64), with `framework: null`.
    - It then reads `/v9/projects/{id}/domains` and returns the first domain that does not redirect. If that fails, it returns the deployment URL.
    - A non-OK Vercel response throws, and its body becomes the API error.
+   - The random suffix is new on every call, so every generation is deployed under a new project name. Regenerating a site therefore creates another Vercel project next to the old one instead of replacing it. Nothing in the code deletes Vercel projects or deployments.
 9. **Record.**
    - [`logToDesktop`](../server/src/utils/desktopLogger.ts) appends name, phone, e-mail, URL and date to `potansiyel-musteriler.txt`. The file goes in the first existing folder among `~/Desktop`, `~/OneDrive/Masaüstü`, `~/OneDrive/Desktop` and `~/Masaüstü`. If that write fails, it goes to the server's working directory.
-   - Finally the business gets `email`, `demoWebsiteUrl` and an automatic note.
+   - Finally the business gets `email`, `demoWebsiteUrl` and an automatic note. `demoWebsiteUrl` is overwritten with the newest URL. Earlier URLs survive only in the earlier automatic notes and in the Desktop file.
 
-Once `demoWebsiteUrl` exists, the lead detail modal shows ready-made e-mail (`mailto:`) and WhatsApp (`wa.me`) offer texts that contain the link.
+**Offer templates.** Once `demoWebsiteUrl` exists, the lead detail modal in [`Businesses.tsx`](../client/src/pages/Businesses.tsx) offers an e-mail and a WhatsApp message, each with a send button and a copy button:
 
-**Review caveat.** Only the local template and the reviews carousel are escaped. **The HTML written by Gemini is deployed as-is**, with no sanitization and no human approval step, and that has three consequences:
+- The texts are Turkish string literals inside the component. They are written in the first person, in the repository author's name, with a one-line self-introduction. No setting holds the sender's identity, so anyone else using the tool has to edit this client source.
+- Each text contains the demo link and a suggested domain from [`getDomainSuggestion`](../client/src/pages/Businesses.tsx): Turkish letters folded to ASCII, everything except `a-z0-9` removed, cut to 30 characters and written as `www.<slug>.com`.
+- The e-mail button opens a `mailto:` link to the stored `email` value as it is, so after a failed lookup the recipient field contains the `Bulunamadı` placeholder.
+- The WhatsApp button opens `wa.me` with the digits of the international number, or of the national number when there is no international one. It is disabled when the business has no phone number.
 
-- **Prompt injection.** The prompt includes third-party data without escaping (the business name and address come from Google), so a crafted name could steer the output.
+**Review caveat.** Only the local template and the reviews carousel are escaped. **The HTML written by Gemini is deployed as-is**, with no sanitization and no human approval step, and that has four consequences:
+
+- **Prompt injection.** The prompt includes third-party data without escaping: the business name, category and address come from Google, and the attached photos are third-party Google images. A crafted name, or text inside a photo, could steer the output. The review texts are not in the prompt; they are escaped and added afterwards.
 - **Invented content.** The prompt itself asks for price points on service cards and a count-up of happy customers "for example to 1500+". Where the rating or review count is missing, the prompt's counter and review instructions fall back to 4.5 and 100, and the fallback template shows ★ 4.9 and 128 reviews.
-- **Public pages.** The page goes live on a public Vercel URL as soon as the request finishes.
+- **Public pages.** The code sets no access protection on the deployment, and the offer templates exist to send its link to the business. Treat the page as public from the moment the request finishes.
+- **Sites accumulate.** Every call creates a new Vercel project (step 8), and nothing deletes the old ones. Regenerating a site, or deleting the business in the app, leaves every earlier site deployed. They have to be removed by hand in Vercel.
 
 A generated site must be reviewed before it is sent to a business. The README says this as well.
 
@@ -571,14 +639,15 @@ The Google key lives in `server/.env` and never reaches the browser. The Gemini 
 
 | Decision | Why | Cost / what was rejected |
 | --- | --- | --- |
-| **Google Place ID as the primary key** | Rescans become idempotent upserts. CRM state (status, notes, e-mail, demo URL) is never duplicated or lost. | A business that Google re-identifies would appear twice. Nothing ever removes rows that are no longer returned. |
-| **Use only Google's `websiteUri`** | Free with the search, deterministic and fast. No crawling, no extra billed calls. | False positives when a profile lacks its site. Link-in-bio and site-builder URLs count as websites. |
-| **Whole-word brand matching** | Substring matching hid independent businesses (`FLO` inside `Floransa`). | Brands must be entered as they are written. Inflected forms and spelling variants do not match. |
+| **Google Place ID as the primary key** | Rescans become idempotent upserts. A rescan never duplicates or overwrites CRM state (status, notes, e-mail, demo URL). | A business that Google re-identifies would appear twice. No scan removes rows that are no longer returned. The "Listeden Çıkar" button is a hard delete with no tombstone, so it does lose CRM state, and the next scan brings the business back as a new lead ([5.5](#55-deduplication-and-persistence-across-scans)). |
+| **Use only Google's `websiteUri`** | It arrives in the same request as the rest of the place, so no crawling and no extra calls are needed. Deterministic and fast. | The field puts every request in Google's Enterprise tier ([5.1](#51-the-search-pipeline-categories-fan-out-and-result-limits)). False positives when a profile lacks its site. Link-in-bio and site-builder URLs count as websites. |
+| **Whole-word brand matching** | Substring matching hid independent businesses (`FLO` inside `Floransa`). | Brands must be entered as they are written. Inflected forms and spelling variants do not match. Brands that are ordinary words (`Mavi`, `Gratis`) still hide independent businesses that use the word ([5.4](#54-chain-brand-exclusion)). |
 | **A partial Google failure fails the whole scan (fail closed)** | A key, quota or permission problem surfaces at once as an error, instead of a silently incomplete list that looks complete. | Results from categories that already succeeded (and were billed) are discarded. |
 | **Reserve `requestCount` before calling Google (fail closed on cost)** | Failed and in-flight searches count against the daily limit, so retry loops cannot overspend. | A crash mid-search leaves a `RUNNING` row that keeps counting until midnight. |
 | **In-process serial queue instead of a database lock** | The count and the insert are two Prisma calls. One Node.js process makes a promise queue enough, with no schema change. | It does not protect two server processes that share one database file. |
 | **Fall back to demo mode when no key is set** | A fresh checkout runs at once, and a missing key never causes a billed call. | A whitespace key is reported as an error instead, so a broken key is not mistaken for demo mode. |
 | **Gemini failure falls back to a local template (fail open), Vercel failure fails the request** | Generation should still produce something. A site that was not deployed must not be recorded as deployed. | Gemini costs are spent even when the deploy then fails. |
+| **A new, randomly suffixed Vercel project per generation** | With a 5-character random suffix, two generations practically never share a project name, even for businesses with the same name, and no lookup of earlier projects is needed. | Old sites are never replaced or removed, so they pile up in the Vercel account ([5.12](#512-demo-site-generation)). |
 | **No authentication, local-only network model** | A single-user desktop tool. Host/Origin checks cover the realistic browser attacks (DNS rebinding, CSRF) on a loopback service. | Must never be exposed to a network. Any local process can still call the API. |
 | **Statuses stored as Turkish labels (plain strings)** | The UI, filters, exports and the database share one vocabulary, so no mapping layer is needed. | Renaming a label needs a data migration. The database has no constraint, only the API enum. |
 | **Distance computed on read, not stored** | Distance depends on the viewer's current location, not on the scan. | The whole result set is loaded and sorted in memory. Fine for a personal database. |
@@ -610,6 +679,7 @@ The server suite uses Vitest. To run it: `npm test` from the repository root, or
 - The live Google mapping in `searchGoogle`: no test feeds it a realistic success response.
 - The generate-site route and its outbound calls: Place Details, photo download, DuckDuckGo, Gemini and Vercel.
 - The XLSX export.
+- Most route handlers as HTTP routes. Only `POST /api/places/search` is driven end to end. The list, update, delete, export, sessions, settings, statistics and excluded-brands handlers are covered only through the helpers they call (`buildBusinessWhere`, `toCsvRow`, `sendRouteError`) or not at all.
 - The React client, which has no tests.
 
 CI ([`.github/workflows/ci.yml`](../.github/workflows/ci.yml)) checks the client only by type-checking and building it. For the server, CI runs `tsc --noEmit`, the tests and the build, then applies the migrations and both seed scripts to a throwaway SQLite file.
@@ -628,7 +698,13 @@ Known gaps, verified in the code:
 - **Invented numbers on demo sites when Google has none:** ★ 4.9 and 128 reviews in the template, 4.5 and 100 in the prompt's counter and review instructions. See [5.12](#512-demo-site-generation).
 - **The Gemini retry loop does not match its comment.** On 429/503 (or 400/401) with several keys, the code comment says "try next key", but the loop actually moves to the next *model* with the same key. The variables `isRateLimited` and `lastError` are set but never read.
 - **Mode is decided twice.** The route and `PlacesService` each compute demo vs real mode. If the toggle flips between the two reads, a search reserved as real can run as demo and store `requestCount = 0`.
-- **Daily quota is local and deletable.** Deleting a `SearchSession` removes it from today's count. A `RUNNING` row left by a crash counts until midnight.
+- **Daily quota is local and deletable.** Deleting a `SearchSession` removes it from today's count. A `RUNNING` row left by a crash counts until midnight. The limits also ignore the Google calls of the demo-site flow ([5.6](#56-cost-limits-and-the-serial-queue)).
+- **Search history has no UI.** `GET` and `DELETE /api/sessions(/:id)` exist only as API routes ([2.2](#22-api-reference)).
+- **Removing a lead is a hard delete without a tombstone.** Its notes are deleted with it, and the next scan re-imports the business as a new lead ([5.5](#55-deduplication-and-persistence-across-scans)).
+- **The seeded chain list hides independent businesses.** `Mavi` and `Gratis` are ordinary words, and "Exclude chains" is on by default, so places such as `Mavi Kuaför` are skipped without notice ([5.4](#54-chain-brand-exclusion)).
+- **Demo sites accumulate on Vercel.** Each generation creates a new project and nothing deletes old ones ([5.12](#512-demo-site-generation)).
+- **The offer templates are hard-coded** in `Businesses.tsx` with the author's name and self-description. After a failed e-mail lookup, the `mailto:` recipient is the `Bulunamadı` placeholder.
+- **Large exports exceed the JSON body limit.** `express.json()` runs with its default limit of 100 kB (102,400 bytes), while `ExportRequestSchema` allows 10,000 IDs. Against the real app, an export body with 3,000 IDs of 27 characters (90,017 bytes) got 200, and one with 3,500 (105,017 bytes) got 413. With 27-character IDs, exporting a list of more than about 3,400 businesses therefore fails.
 - **Permanently closed businesses can appear as leads**, because `businessStatus` is stored but not filtered.
 - **The e-mail lookup is a heuristic.** It takes the first address found on a DuckDuckGo result page, and `city` is just the last token of the address, so it can return an unrelated address.
 - **The Origin guard checks the hostname, not the port.** Any page served from `localhost` on another port passes it.
@@ -647,13 +723,17 @@ Natural next steps:
 6. Enforce `maxBusinessesPerSearch` and filter `CLOSED_PERMANENTLY`.
 7. Decide the mode once per search and pass it to `PlacesService`.
 8. Add an explicit transition table and a status history if the CRM should model a real pipeline.
+9. Replace the hard delete with an "ignored" flag, so a removed business is not re-imported as a new lead.
+10. Move the sender identity of the offer templates into Settings.
+11. Raise the body limit for exports, or send the active filter instead of the list of IDs.
+12. Drop ordinary-word brands from the seed list, or report which places the chain filter skipped.
 
 ## 9. Code tour
 
 Read the files in this order:
 
 1. [`server/prisma/schema.prisma`](../server/prisma/schema.prisma): the five models; everything else reads and writes these.
-2. [`server/src/app.ts`](../server/src/app.ts): the middleware order, the rate limiter, the routers and the error handler.
+2. [`server/src/app.ts`](../server/src/app.ts): the middleware order, the rate limiter, the routers, production static serving and the error handler.
 3. [`server/src/utils/localOnly.ts`](../server/src/utils/localOnly.ts): the Host/Origin guard that the security model depends on.
 4. [`server/src/routes/places.ts`](../server/src/routes/places.ts): scan validation, limit reservation under the lock, session lifecycle.
 5. [`server/src/utils/searchLimits.ts`](../server/src/utils/searchLimits.ts): the limit checks, local midnight and the serial queue.
@@ -663,7 +743,7 @@ Read the files in this order:
 9. [`server/src/utils/businessFilters.ts`](../server/src/utils/businessFilters.ts): list filters and the CRM groups.
 10. [`server/src/routes/businesses.ts`](../server/src/routes/businesses.ts): CRM updates, exports and the generate-site orchestration.
 11. [`server/src/services/aiWebsiteService.ts`](../server/src/services/aiWebsiteService.ts): prompt, Gemini loop, fallback template, post-processing and Vercel deploy.
-12. [`client/src/pages/Businesses.tsx`](../client/src/pages/Businesses.tsx): how the UI drives filters, CRM updates, exports and the offer templates.
+12. [`client/src/pages/Businesses.tsx`](../client/src/pages/Businesses.tsx): how the UI drives filters, CRM updates, the hard delete, exports and the offer templates.
 
 ## 10. Glossary
 
@@ -673,7 +753,8 @@ Read the files in this order:
 | Lead / potential client | A stored business whose `websiteStatus` is `no_website` or `social_media_only`. |
 | Place ID | Google's stable identifier for a place. Used here as `Business.id`. |
 | Nearby Search (New) | The Places API endpoint `places:searchNearby`. It returns up to 20 places of the given types inside a circle. |
-| Field mask | The `X-Goog-FieldMask` header that lists which place fields Google should return. |
+| Field mask | The `X-Goog-FieldMask` header that lists which place fields Google should return. It also decides the pricing tier of the request. |
+| SKU, Nearby Search Enterprise | A billing item in Google's price list. A Nearby Search request is billed at the highest SKU among its requested fields. Here that is Nearby Search Enterprise, because of `websiteUri`, the phone numbers, rating, rating count and opening hours. |
 | `includedTypes` | The Nearby Search parameter that restricts results to places carrying a given type (one per request here). |
 | Category | A Google place type such as `cafe` or `hair_salon`. One category is one billed request. |
 | `websiteUri` | The website field of a Google place. It is the only input to the website classification. |
@@ -693,6 +774,8 @@ Read the files in this order:
 | Müşteriye dönüştü | "Converted to a client". |
 | crmGroup | A list filter over statuses: `aranmamis` (not called), `arananlar` (called), `olumlu` (positive), `olumsuz` (negative), `daha_sonra_ara` (call later). |
 | Bulunamadı | "Not found", stored as the e-mail when the lookup fails. |
+| Listeden Çıkar | "Remove from the list", the results-list button that permanently deletes a business and its notes. |
+| Production mode | `NODE_ENV=production`: the API also serves the built client on port 3001. |
 | Formula injection | A spreadsheet cell starting with `=`, `+`, `-` or `@` being executed as a formula when a CSV is opened. |
 | DNS rebinding | An attack where a foreign domain resolves to `127.0.0.1` so that a browser page can reach a local service. It is blocked by the Host check. |
 | CSRF | A foreign web page making the browser send a request to this API. It is blocked by the Origin check. |
@@ -702,13 +785,14 @@ Read the files in this order:
 
 ## Türkçe özet
 
-Eksik Web, kendi bilgisayarında çalışan, tek kullanıcılı bir potansiyel müşteri bulma ve CRM aracıdır. Seçilen konum çevresinde, seçilen her kategori için Google Places API (New) Nearby Search'e bir istek atar. İstekler en fazla 5'i aynı anda olacak şekilde gruplar halinde ve 10 sn zaman aşımıyla gider; her istek en fazla 20 sonuç döner ve sayfalama yoktur. Her işletme, Google'ın döndürdüğü `websiteUri` alanına bakılarak "web sitesi yok", "sadece sosyal medya" (8 alan adı) veya "web sitesi var" olarak sınıflandırılır. Ardından zincir marka, açık olma, telefon, puan ve yorum filtreleri uygulanır. İşletmeler Google Place ID ile tek bir transaction içinde upsert edilir; böylece arama durumu, notlar, e-posta ve demo site adresi sonraki taramalarda korunur. Gerçek taramalarda kategori sınırı (varsayılan 10) ve günlük tarama sınırı (varsayılan 100) uygulanır. Tarama Google çağrılmadan önce `RUNNING` durumunda ve istek sayısı ayrılmış olarak kaydedilir; sayım ile kayıt tek bir sıra (kilit) altında çalışır. Böylece başarısız taramalar da sayılır ve aynı anda başlayan iki tarama limiti birlikte aşamaz.
+Eksik Web, kendi bilgisayarında çalışan, tek kullanıcılı bir potansiyel müşteri bulma ve CRM aracıdır. Seçilen konum çevresinde, seçilen her kategori için Google Places API (New) Nearby Search'e bir istek atar. İstekler en fazla 5'i aynı anda olacak şekilde gruplar halinde ve 10 sn zaman aşımıyla gider; her istek en fazla 20 sonuç döner ve sayfalama yoktur. Her işletme, Google'ın döndürdüğü `websiteUri` alanına bakılarak "web sitesi yok", "sadece sosyal medya" (8 alan adı) veya "web sitesi var" olarak sınıflandırılır. Alan maskesinde `websiteUri`, telefon, puan ve çalışma saatleri bulunduğu için Google her kategori isteğini Nearby Search Enterprise seviyesinden ücretlendirir; maliyet işletme başına değil, istek başınadır. Ardından zincir marka, açık olma, telefon, puan ve yorum filtreleri uygulanır. İşletmeler Google Place ID ile tek bir transaction içinde upsert edilir; böylece arama durumu, notlar, e-posta ve demo site adresi sonraki taramalarda korunur. Buna karşılık "Listeden Çıkar" düğmesi işletmeyi notlarıyla birlikte kalıcı olarak siler ve sonraki tarama onu yeni bir kayıt olarak geri getirir. Gerçek taramalarda kategori sınırı (varsayılan 10) ve günlük tarama sınırı (varsayılan 100) uygulanır. Tarama Google çağrılmadan önce `RUNNING` durumunda ve istek sayısı ayrılmış olarak kaydedilir; sayım ile kayıt tek bir sıra (kilit) altında çalışır. Böylece başarısız taramalar da sayılır ve aynı anda başlayan iki tarama limiti birlikte aşamaz.
 
-CRM'de 11 arama durumu vardır, ancak bir geçiş tablosu yoktur: API her durumdan her duruma geçişe izin verir ve geçmiş yalnızca notlarda tutulur. CSV dışa aktarmada formül gibi başlayan hücrelerin başına `'` eklenir; XLSX hücreleri ise metin hücresi olarak yazılır. Deneysel demo site oluşturucu Gemini ile HTML üretir (olmazsa kaçışlı yerel şablon kullanır) ve Vercel'e yükler; ancak Gemini çıktısı kontrol edilmeden yayınlanır ve uydurma içerik barındırabilir. Güvenlik modeli tamamen yereldir: 127.0.0.1'e bağlanma, Host/Origin kontrolü, istek sınırı ve yığın izi içermeyen JSON hata yanıtları.
+CRM'de 11 arama durumu vardır, ancak bir geçiş tablosu yoktur: API her durumdan her duruma geçişe izin verir ve geçmiş yalnızca notlarda tutulur. CSV dışa aktarmada formül gibi başlayan hücrelerin başına `'` eklenir; XLSX hücreleri ise metin hücresi olarak yazılır. Deneysel demo site oluşturucu Gemini ile HTML üretir (olmazsa kaçışlı yerel şablon kullanır) ve Vercel'e yükler. Gemini'ye yalnızca işletme bilgileri ve en fazla 4 Google fotoğrafı gider; 4–5 yıldızlı yorumlar sonradan kaçışlı bir carousel olarak eklenir. Gemini çıktısı kontrol edilmeden yayınlanır ve uydurma içerik barındırabilir. Her üretim yeni bir Vercel projesi oluşturur ve eski siteler silinmez. E-posta ve WhatsApp teklif şablonları, yazarın adıyla istemci koduna sabit yazılmıştır. Güvenlik modeli tamamen yereldir: 127.0.0.1'e bağlanma, Host/Origin kontrolü, istek sınırı ve yığın izi içermeyen JSON hata yanıtları.
 
-- **Mimari:** React + Vite istemci, Express + Prisma + SQLite sunucu. İş kuralları test edilebilir saf fonksiyonlar olarak `server/src/utils/` altındadır.
+- **Mimari:** React + Vite istemci, Express + Prisma + SQLite sunucu. İş kuralları test edilebilir saf fonksiyonlar olarak `server/src/utils/` altındadır. Geliştirmede Vite 5173 portundan API'ye proxy yapar; `NODE_ENV=production` ile API derlenmiş arayüzü 3001 portundan kendisi sunar.
+- **API:** Bölüm 2.2 tüm uç noktaları listeler. Tarama geçmişi (`/api/sessions`) yalnızca API üzerinden erişilebilir; arayüzde karşılığı yoktur.
 - **"Web sitesi yok" kararı:** Yalnızca Google'ın `websiteUri` alanına dayanır; site taranmaz. Link-in-bio ve site oluşturucu adresleri "web sitesi var" sayılır.
-- **Zincir filtresi:** Türkçe harf ve kesme işareti normalizasyonundan sonra tam kelime eşleşmesi yapılır ("FLO", "Floransa"yı gizlemez).
+- **Zincir filtresi:** Türkçe harf ve kesme işareti normalizasyonundan sonra tam kelime eşleşmesi yapılır ("FLO", "Floransa"yı gizlemez). Ancak sıradan kelime olan markalar (`Mavi`, `Gratis`) "Mavi Kuaför" gibi bağımsız işletmeleri de gizler ve "zincirleri hariç tut" seçeneği varsayılan olarak açıktır.
 - **Demo modu:** Ayarlardan açıldığında ya da API anahtarı olmadığında 15 örnek mekânla çalışır, limit uygulanmaz.
 - **Testler:** Bu belge için çalıştırıldı: 10 dosyada 50 test, hepsi geçti. Canlı Google, Gemini ve Vercel çağrıları test edilmez.
 - **Bilinen eksikler:**
@@ -717,3 +801,7 @@ CRM'de 11 arama durumu vardır, ancak bir geçiş tablosu yoktur: API her durumd
   - Eksik puanlar uyduruluyor.
   - "Tarama başına maksimum işletme" uygulanmıyor.
   - Kalıcı olarak kapanmış işletmeler elenmiyor.
+  - "Listeden Çıkar" kalıcı silmedir; sonraki tarama işletmeyi yeni kayıt olarak geri getirir.
+  - Demo siteler Vercel'de birikir; eski projeler silinmez.
+  - Demo site akışının Google çağrıları günlük limite sayılmaz.
+  - Yaklaşık 3.400'den fazla kaydın dışa aktarımı 100 kB JSON gövde sınırına takılır.
