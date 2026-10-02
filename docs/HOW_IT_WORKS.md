@@ -172,7 +172,7 @@ The routes with the largest effect are `GET /api/settings`, which returns the st
 | `HOST` | `127.0.0.1` | `server.ts` | Interface the API listens on ([5.13](#513-local-only-security-model)). |
 | `PORT` | `3001` | `server.ts` | API port. The Vite proxy target `http://127.0.0.1:3001` is hard-coded in [`vite.config.ts`](../client/vite.config.ts), so a different port also needs that file changed. |
 | `ALLOWED_HOSTS` | empty | [`parseAllowedHosts`](../server/src/utils/localOnly.ts) | Comma-separated host names, trimmed and lowercased, accepted in addition to the loopback names in both `Host` and `Origin`. |
-| `NODE_ENV` | unset | [`app.ts`](../server/src/app.ts), [`db.ts`](../server/src/db.ts) | `production` makes the API serve `client/dist` itself ([2.1](#21-run-modes)). `development` turns on Prisma query and warning logs. No npm script sets it. |
+| `NODE_ENV` | unset | [`app.ts`](../server/src/app.ts), [`db.ts`](../server/src/db.ts) | `production` makes the API serve `client/dist` itself ([2.1](#21-run-modes)). `development` turns on Prisma query and warning logs, but only when it is set in the process environment: `server.ts` imports `./app`, which loads `db.ts` and creates the Prisma client, before it calls `dotenv.config()`, so a `server/.env` value is read too late for the logs (it still works for `production`, which `createApp` reads after `dotenv.config()`). No npm script sets it. |
 
 **Settings stored in the database.** The `AppSettings` row ([4](#4-data-model)) holds what the Settings page edits, validated by [`SettingsUpdateSchema`](../server/src/schemas/validation.ts): `dailyMaxSearches` (1 to 1000, default 100), `maxCategoriesPerSearch` (1 to 50, default 10), `maxBusinessesPerSearch` (1 to 1000, default 100, not enforced), `isDemoMode`, `geminiApiKey` (one or more keys separated by commas or newlines) and `vercelToken`. Each request reads the row again, so changes apply at once.
 
@@ -647,7 +647,7 @@ The rows of both exports come back in database order, not in the order of the on
 3. **Photos.**
    - It uses the cached `photos` JSON. If that is empty and a Google key exists, it calls Place Details with `fields=photos` and caches the result.
    - If a Google key exists, it then downloads **up to 4** photos (`maxWidthPx=800`) one after another, as base64. Each file is named by its position in Google's list: the *i*-th photo becomes `photo-i.jpg`.
-   - A failed download (a non-OK response or a network error) is logged and skipped, and the later photos keep their numbers. What that does to the page is explained under "Photo numbering after a failed download" below.
+   - A failed download is skipped: a non-OK response silently, a network error with a log line. The later photos keep their numbers. A non-OK Place Details (`fields=photos`) response is also skipped silently. What that does to the page is explained under "Photo numbering after a failed download" below.
 4. **Reviews.** It calls Place Details with `fields=reviews&languageCode=tr` and keeps reviews with rating ≥ 4 and more than 10 characters of text. The review texts are **not** sent to Gemini. They are only used in post-processing (step 7.4).
 5. **Prompt construction**, in [`AIWebsiteService.generateHtml`](../server/src/services/aiWebsiteService.ts). One long instruction text, mostly in Turkish, holds:
    - the business name, category, address, phone, rating and review count;

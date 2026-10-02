@@ -166,7 +166,7 @@ Other scripts: `npm run build` (server `tsc` + client `vite build`), `npm start`
 | `HOST` | `127.0.0.1` | Interface the API listens on. Keep the loopback address. |
 | `ALLOWED_HOSTS` | empty | Extra host names accepted in `Host` / `Origin` headers, comma separated |
 | `DATABASE_URL` | none, required (`.env.example`: `file:./dev.db`) | SQLite connection string. Prisma resolves the relative path against `server/prisma/`, so the file is `server/prisma/dev.db` |
-| `NODE_ENV` | unset | `production` makes the API serve the built client on its own port; `development` turns on Prisma query logs |
+| `NODE_ENV` | unset | `production` makes the API serve the built client on its own port. `development` turns on Prisma query logs only when set in the shell environment, not in `server/.env` (the Prisma client is created before `.env` is loaded) |
 
 The full configuration reference, including the values fixed in code, is in [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md#23-configuration-reference).
 
@@ -367,7 +367,7 @@ Diğer komutlar: `npm run build` (sunucu `tsc` + istemci `vite build`), `npm sta
 | `HOST` | `127.0.0.1` | API'nin dinlediği arayüz. Loopback adresinde bırakın. |
 | `ALLOWED_HOSTS` | boş | `Host` / `Origin` başlıklarında kabul edilecek ek host adları (virgülle) |
 | `DATABASE_URL` | yok, zorunlu (`.env.example`: `file:./dev.db`) | SQLite bağlantı adresi. Prisma göreli yolu `server/prisma/` klasörüne göre çözer; dosya `server/prisma/dev.db` olur |
-| `NODE_ENV` | tanımsız | `production` ile API derlenmiş arayüzü kendi portundan sunar; `development` Prisma sorgu loglarını açar |
+| `NODE_ENV` | tanımsız | `production` ile API derlenmiş arayüzü kendi portundan sunar. `development` Prisma sorgu loglarını yalnızca kabuk ortamında tanımlıysa açar, `server/.env` içinde açmaz (Prisma istemcisi `.env` yüklenmeden oluşturulur) |
 
 Koda sabit yazılmış değerler dahil tüm yapılandırma listesi: [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md#23-configuration-reference).
 
